@@ -1,6 +1,5 @@
 use std::error::Error;
 
-use futures::executor::block_on;
 use mc_auth::AuthFlow;
 use reqwest::header::{AUTHORIZATION, HeaderMap};
 
@@ -54,7 +53,7 @@ impl Authenticator {
             }
         });
 
-        println!("{}", user.name);
+        println!("{}", user.name());
 
         Ok(user)
     }

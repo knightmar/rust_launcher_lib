@@ -1,5 +1,8 @@
+#![allow(dead_code)]
+#![allow(non_snake_case)]
 mod auth;
 mod update;
+
 
 #[cfg(test)]
 mod tests {
@@ -24,6 +27,7 @@ mod tests {
         let mut updater = Updater::new("1.20.2");
         updater.set_relative_local_dir_path(".banane");
         println!("{}", updater.local_dir_path());
-
+        updater.install_files();
+        println!("{:?}", updater.manifest().as_ref().unwrap().libraries[0].name);
     }
 }
