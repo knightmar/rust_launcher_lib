@@ -3,7 +3,7 @@ use serde_json::Value;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct Root {
+pub struct LibsRoot {
     pub arguments: Arguments,
     pub asset_index: AssetIndex,
     pub assets: String,
