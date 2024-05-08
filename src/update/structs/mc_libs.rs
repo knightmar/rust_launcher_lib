@@ -25,7 +25,19 @@ pub struct LibsRoot {
 #[serde(rename_all = "camelCase")]
 pub struct Arguments {
     pub game: Vec<Value>,
-    pub jvm: (Jvm, Jvm2, Jvm3, String, String, String, String, String, String, String, String),
+    pub jvm: (
+        Jvm,
+        Jvm2,
+        Jvm3,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+        String,
+    ),
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]

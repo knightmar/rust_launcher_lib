@@ -2,6 +2,7 @@ use std::error::Error;
 use std::process::Command;
 
 use crate::launch::utils::get_relative_local_dir_path;
+use crate::update::Updater;
 use crate::update::utils::Directory;
 
 mod utils;
@@ -54,8 +55,14 @@ impl GameLauncher {
     }
 
     pub fn launch(&self, access_token: &str) -> Result<(), Box<dyn Error>> {
+        let mut updater = Updater::new(self.version.as_str());
+        if let Err(..) = updater.get_files_list() {
+            return Err("Error getting files list".into());
+        }
+        
+        
         let lib_str = self.get_libs();
-        let mut command = Command::new("java");
+        let mut command = Command::new(   self.game_dir.clone() + &*Directory::Runtime.as_str() + "bin" + &*std::path::MAIN_SEPARATOR.to_string() + "java.exe");
         command.args(&self.jvm_args);
         command.arg("-cp");
         command.arg(lib_str);
@@ -64,9 +71,12 @@ impl GameLauncher {
         command.args(["--version", &*self.version]);
         command.args(["--username", "Player"]);
         command.args(["--gameDir", &*self.game_dir]);
-        command.args(["--assetsDir", &*(self.game_dir.clone() + &*Directory::Assets.as_str())]);
-        command.args(["--assetIndex", "8"]);
-        
+        command.args([
+            "--assetsDir",
+            &*(self.game_dir.clone() + &*Directory::Assets.as_str()),
+        ]);
+        command.args(["--assetIndex", updater.libs_manifest().as_ref().unwrap().asset_index.id.as_str()]);
+
         println!("Launching game with command: {:?}", command);
 
         let output = command.output()?;

@@ -6,10 +6,13 @@ mod update;
 
 #[cfg(test)]
 mod tests {
+    use std::sync::Arc;
+
     use crate::auth::Authenticator;
-    use crate::launch;
+    use crate::{launch, update};
+    use crate::update::downloads::DownloadManager;
+    use crate::update::structs::mc_libs::LibsRoot;
     use crate::update::Updater;
-    use crate::update::utils::Directory;
 
     #[test]
     fn test_auth() {
@@ -49,34 +52,34 @@ mod tests {
 
     #[test]
     fn random_test() {
-        let mut up = Updater::new("1.20.2");
-        up.set_relative_local_dir_path(".banane");
-        let local_dir_path = up.local_dir_path().to_string();
-        let asset_path = "minecraft/sounds/block/powder_snow/break4.ogg";
-
-        let path_builder = local_dir_path.to_string()
-            + &*Directory::Assets.as_str()
-            + &asset_path.replace('/', "\\");
-
-        println!("{}", path_builder);
-
-        let mut parts: Vec<&str> = path_builder.split('\\').collect();
-        println!("{:?}", parts);
-        parts.pop();
-        let path = parts.join("\\");
-        println!("{}", path);
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+        runtime.block_on(async {
+            DownloadManager::download_file(Arc::new( reqwest::Client::new()), "https://resources.download.minecraft.net/2e/2e630d9df93d600d90dca070c96e3aa89237afa9", "C:\\Users\\arthu\\AppData\\Roaming\\.banane\\assets\\objects\\2e\\2e630d9df93d600d90dca070c96e3aa89237afa9", &Some("2e630d9df93d600d90dca070c96e3aa89237afa9".to_string())).await.expect("TODO: panic message");
+        });
     }
 
     #[test]
     fn launch_test() {
+        let mut updater = Updater::new("1.20.6");
+        updater.set_relative_local_dir_path(".trucmuche");
+        updater.install_files().unwrap();
+        
         let launcher = launch::GameLauncher::new(
-            "1.20.2".to_string(),
-            ".banane".to_string(),
+            "1.20.6".to_string(),
+            ".trucmuche".to_string(),
             "client.jar".to_string(),
             vec![],
             vec![],
             "net.minecraft.client.main.Main".to_string(),
         );
         launcher.launch("").unwrap();
+    }
+    
+    #[test]
+    fn test_get_java_dl_link() {
+        let mut manager = DownloadManager::new();
+        let mut updater = Updater::new("1.20.6");
+        updater.set_relative_local_dir_path(".trucmuche");
+        updater.get_files_list().expect("TODO: panic message");
     }
 }

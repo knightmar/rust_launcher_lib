@@ -1,4 +1,3 @@
-use std::clone;
 use std::error::Error;
 
 use crate::update::downloads::DownloadManager;
@@ -8,8 +7,9 @@ use crate::update::structs::mc_versions::{Version, Versions};
 use crate::update::utils::check_all_directories;
 
 pub mod downloads;
+pub mod structs;
 pub mod utils;
-mod structs;
+pub(crate) mod java;
 
 pub struct Updater {
     local_dir_path: String,
@@ -46,6 +46,8 @@ impl Updater {
         runtime.block_on(async {
             download_manager.download_all().await;
         });
+        
+        download_manager.install_java(self.libs_manifest.clone().unwrap().java_version.major_version.to_string(), self.local_dir_path.clone()).unwrap();
 
         Ok(())
     }
@@ -62,7 +64,7 @@ impl Updater {
                 .await
             {
                 if let Ok(text) = res.text().await {
-                    if let Ok(parse) = serde_json::from_str(&*text) {
+                    if let Ok(parse) = serde_json::from_str(&text) {
                         versions = Some(parse)
                     }
                 }

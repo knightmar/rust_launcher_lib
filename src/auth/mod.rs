@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use mc_auth::AuthFlow;
-use reqwest::header::{AUTHORIZATION, HeaderMap};
+use reqwest::header::{HeaderMap, AUTHORIZATION};
 
 use crate::auth::profile::User;
 
@@ -29,24 +29,30 @@ impl Authenticator {
         let minecraft = auth.login_in_minecraft()?;
 
         Ok(Authenticator {
-            access_token: minecraft.access_token.to_string()
+            access_token: minecraft.access_token.to_string(),
         })
     }
 
     pub fn get_profile(&self) -> Result<User, Box<dyn Error>> {
         let mut headers = HeaderMap::new();
-        headers.insert(AUTHORIZATION, format!("Bearer {}", self.access_token).parse().unwrap());
+        headers.insert(
+            AUTHORIZATION,
+            format!("Bearer {}", self.access_token).parse().unwrap(),
+        );
         let client = reqwest::Client::new();
         let mut user: User = User::new();
 
         let runtime = tokio::runtime::Runtime::new().unwrap();
         runtime.block_on(async {
-            if let Ok(res) = client.get("https://api.minecraftservices.com/minecraft/profile")
+            if let Ok(res) = client
+                .get("https://api.minecraftservices.com/minecraft/profile")
                 .headers(headers)
-                .send().await {
+                .send()
+                .await
+            {
                 if let Ok(text) = res.text().await {
                     println!("{}", text);
-                    if let Ok(parse) = serde_json::from_str(&*text) {
+                    if let Ok(parse) = serde_json::from_str(&text) {
                         user = parse
                     }
                 }
@@ -58,6 +64,8 @@ impl Authenticator {
         Ok(user)
     }
     pub fn new() -> Self {
-        Self { access_token: String::new() }
+        Self {
+            access_token: String::new(),
+        }
     }
 }

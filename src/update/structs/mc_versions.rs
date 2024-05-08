@@ -13,7 +13,13 @@ pub struct Version {
 
 impl PartialEq for Version {
     fn eq(&self, other: &Self) -> bool {
-        self.id == other.id && self.r#type == other.r#type && self.url == other.url && self.time == other.time && self.releaseTime == other.releaseTime && self.sha1 == other.sha1 && self.complianceLevel == other.complianceLevel
+        self.id == other.id
+            && self.r#type == other.r#type
+            && self.url == other.url
+            && self.time == other.time
+            && self.releaseTime == other.releaseTime
+            && self.sha1 == other.sha1
+            && self.complianceLevel == other.complianceLevel
     }
 }
 
