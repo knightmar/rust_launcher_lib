@@ -10,6 +10,30 @@ pub(crate) fn get_file_name_from_url(url: &str) -> String {
     url.split('/').last().unwrap().to_string()
 }
 
+pub(crate) fn get_lib_path_from_url(local_dir_path: String, url: &str) -> String {
+    local_dir_path.to_string()
+        + &Directory::Libraries.as_str()
+        + get_file_name_from_url(url).as_str()
+}
+
+pub(crate) fn get_asset_path_from_hash(local_dir_path: String, hash: &str) -> (String, String) {
+    // Construct the path where the asset will be stored
+    let file_path = local_dir_path.to_string()
+        + &*Directory::Assets.as_str()
+        + "objects"
+        + std::path::MAIN_SEPARATOR_STR
+        + hash[0..2].to_string().as_str()
+        + std::path::MAIN_SEPARATOR_STR
+        + hash;
+
+    let mut parts: Vec<&str> = file_path.split(std::path::MAIN_SEPARATOR_STR).collect();
+    parts.pop();
+    parts.pop();
+    let directory_path = parts.join(std::path::MAIN_SEPARATOR_STR);
+
+    (directory_path, file_path)
+}
+
 pub(crate) enum Directory {
     Libraries,
     Assets,
@@ -71,49 +95,10 @@ pub fn check_file_hash(file_path: &str, hash: &str) -> bool {
         io::copy(&mut file, &mut hasher).unwrap();
         let file_hash = hasher.finalize();
         let computed_hash = hex::encode(file_hash);
-        println!("Computed hash: {} for file : {}", computed_hash, file_path);
         hash == computed_hash
     } else if let Err(e) = file {
-        eprintln!("Error opening file: {}", e);
         false
     } else {
         false
-    }
-}
-
-impl Updater {
-    pub fn local_dir_path(&self) -> &str {
-        &self.local_dir_path
-    }
-    pub fn version(&self) -> &String {
-        &self.version
-    }
-    pub fn set_full_local_dir_path(&mut self, local_dir_path: String) {
-        self.local_dir_path = local_dir_path;
-    }
-    pub fn set_relative_local_dir_path(&mut self, local_dir_path: &str) {
-        let app_Root = std::env::var("APPDATA").expect("No APP_Root directory");
-        self.local_dir_path = app_Root
-            + std::path::MAIN_SEPARATOR_STR
-            + local_dir_path
-            + std::path::MAIN_SEPARATOR_STR;
-    }
-    pub fn set_version(&mut self, version: String) {
-        self.version = version;
-    }
-    pub fn new(version: &str) -> Self {
-        Self {
-            local_dir_path: String::new(),
-            version: String::from(version),
-            libs_manifest: None,
-            assets_manifest: None,
-        }
-    }
-    pub fn libs_manifest(&self) -> &Option<LibsRoot> {
-        &self.libs_manifest
-    }
-
-    pub fn assets_manifest(&self) -> &Option<AssetsRoot> {
-        &self.assets_manifest
     }
 }

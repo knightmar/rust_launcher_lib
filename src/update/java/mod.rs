@@ -18,7 +18,6 @@ pub fn get_java_zulu_dl_link(version:String) -> Result<String, Box<dyn std::erro
         {
             if let Ok(text) = res.text().await {
                 if let Ok(parse) = serde_json::from_str::<ZuluRoot>(&text) {
-                    println!("Versions: {:?}", parse);
                     versions = Some(parse)
                 }
             }

@@ -1,57 +1,23 @@
 use std::error::Error;
-
+use std::sync::Arc;
+use reqwest::Client;
+use tokio::fs::File;
+use tokio::io::AsyncWriteExt;
 use crate::update::downloads::DownloadManager;
 use crate::update::structs::mc_assets::AssetsRoot;
 use crate::update::structs::mc_libs::LibsRoot;
 use crate::update::structs::mc_versions::{Version, Versions};
-use crate::update::utils::check_all_directories;
+use crate::update::update::Updater;
+use crate::update::utils::check_file_hash;
 
 pub mod downloads;
+pub(crate) mod java;
 pub mod structs;
 pub mod utils;
-pub(crate) mod java;
+pub(crate) mod update;
 
-pub struct Updater {
-    local_dir_path: String,
-    version: String,
-    libs_manifest: Option<LibsRoot>,
-    assets_manifest: Option<AssetsRoot>,
-}
 
 impl Updater {
-    pub fn install_files(&mut self) -> Result<(), Box<dyn Error>> {
-        self.get_files_list().unwrap();
-        check_all_directories(self.local_dir_path.clone());
-
-        if self.libs_manifest.is_none() {
-            eprintln!("Please get the files list before installing files");
-            return Err("Files list not available".into());
-        }
-
-        let libs_manifest = match &self.libs_manifest {
-            Some(manifest) => manifest,
-            None => return Err::<_, Box<dyn Error>>("Libs manifest not available".into()),
-        };
-
-        let assets_manifest = match &self.assets_manifest {
-            Some(manifest) => manifest,
-            None => return Err::<_, Box<dyn Error>>("Assets manifest not available".into()),
-        };
-
-        let mut download_manager = DownloadManager::new();
-        download_manager.populate_libs(libs_manifest.clone(), self.local_dir_path.clone());
-        download_manager.populate_assets(assets_manifest, self.local_dir_path.clone());
-        download_manager.populate_game(libs_manifest.clone(), self.local_dir_path.clone());
-        let runtime = tokio::runtime::Runtime::new().unwrap();
-        runtime.block_on(async {
-            download_manager.download_all().await;
-        });
-        
-        download_manager.install_java(self.libs_manifest.clone().unwrap().java_version.major_version.to_string(), self.local_dir_path.clone()).unwrap();
-
-        Ok(())
-    }
-
     pub fn get_versions_list(&self) -> Option<Versions> {
         let client = reqwest::Client::new();
         let mut versions = None;
@@ -73,7 +39,8 @@ impl Updater {
 
         versions
     }
-    pub fn get_files_list(&mut self) -> Result<(), Box<dyn Error>> {
+
+    pub fn update_files_list(&mut self) -> Result<(), Box<dyn Error>> {
         let mut is_version_correct = false;
         let mut version: Option<Version> = None;
         match self.get_versions_list() {
@@ -82,7 +49,7 @@ impl Updater {
             }
             Some(mc_versions) => {
                 for version_item in mc_versions.versions() {
-                    if version_item.id() == self.version {
+                    if version_item.id() == self.version() {
                         is_version_correct = true;
                         version = Some((*version_item).clone());
                         break;
@@ -96,7 +63,7 @@ impl Updater {
             return Err("Version not found".into());
         }
 
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let mut libs_manifest: Option<LibsRoot> = None;
         let mut assets_manifest: Option<AssetsRoot> = None;
 
@@ -107,10 +74,9 @@ impl Updater {
                 Some(version) => {
                     if let Ok(res) = client.get(version.url()).send().await {
                         if let Ok(text) = res.text().await {
-                            match serde_json::from_str::<LibsRoot>(&text) {
+                            match LibsRoot::parse_json(text) {
                                 Ok(parse) => {
                                     libs_manifest = Some(parse);
-
                                     if let Ok(res) = client
                                         .get(libs_manifest.clone().unwrap().asset_index.url)
                                         .send()
@@ -149,10 +115,56 @@ impl Updater {
             }
         });
 
-        self.libs_manifest = libs_manifest;
-        self.assets_manifest = assets_manifest;
+        self.set_libs_manifest(libs_manifest);
+        self.set_assets_manifest(assets_manifest);
         Ok(())
     }
+}
 
-    // All the other basic methods are located in the utils.rs file for organization purposes
+impl DownloadManager {
+    pub(crate) async fn download_file(
+        client: Arc<Client>,
+        url: &str,
+        path: String,
+        hash: &Option<String>,
+    ) -> Result<(), String> {
+        // Send a GET request
+        let response = client
+            .get(url)
+            .send()
+            .await
+            .map_err(|_| format!("Failed to send GET request to {}", url))?;
+
+        //println!("Downloading: {}", url);
+
+        // Get the bytes of the file
+        let bytes = response
+            .bytes()
+            .await
+            .map_err(|_| format!("Failed to get bytes from {}", url))?;
+
+        //println!("Downloaded {} bytes", bytes.len());
+
+        // Create the directories leading up to the file
+        let parent_dir = std::path::Path::new(path.as_str()).parent().unwrap();
+        tokio::fs::create_dir_all(parent_dir)
+            .await
+            .map_err(|_| format!("Failed to create directories for file at {}", path))?;
+
+        // Create a new async file and write the bytes into it
+        let mut file = File::create(path.as_str())
+            .await
+            .map_err(|_| format!("Failed to create file at {}", path))?;
+        file.write_all(&bytes)
+            .await
+            .map_err(|_| format!("Failed to write to file at {}", path))?;
+
+        if let Some(hash) = hash {
+            if !check_file_hash(path.as_str(), hash.as_str()) {
+                return Err(format!("Hash mismatch for file at {}", path));
+            }
+        }
+
+        Ok(())
+    }
 }
