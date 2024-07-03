@@ -23,12 +23,12 @@ mod tests {
             Err(e) => eprintln!("Error during authentication: {}", e),
         }
     }
-    
+
     #[test]
     fn check_files() {
         let mut updater = Updater::new("1.19.4");
         updater.set_relative_local_dir_path(".banane");
-        
+
         updater.update_files_list().expect("TODO: panic message");
         updater.install_files();
     }
@@ -38,7 +38,7 @@ mod tests {
         let mut updater = Updater::new("1.21");
         updater.set_relative_local_dir_path(".banane");
         updater.install_files();
-        
+
         let launcher = launch::GameLauncher::new(
             "1.21".to_string(),
             ".banane".to_string(),

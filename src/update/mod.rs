@@ -1,8 +1,10 @@
 use std::error::Error;
 use std::sync::Arc;
+
 use reqwest::Client;
 use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
+
 use crate::update::downloads::DownloadManager;
 use crate::update::structs::mc_assets::AssetsRoot;
 use crate::update::structs::mc_libs::LibsRoot;
@@ -18,6 +20,7 @@ pub(crate) mod update;
 
 
 impl Updater {
+    // get the version list from the json
     pub fn get_versions_list(&self) -> Option<Versions> {
         let client = reqwest::Client::new();
         let mut versions = None;
@@ -40,6 +43,7 @@ impl Updater {
         versions
     }
 
+    // load the Updater instance fields libs_manifest and assets_manifest with the matching files for the good version of the game
     pub fn update_files_list(&mut self) -> Result<(), Box<dyn Error>> {
         let mut is_version_correct = false;
         let mut version: Option<Version> = None;
@@ -122,6 +126,7 @@ impl Updater {
 }
 
 impl DownloadManager {
+    // function that download a file, if it is not existing, and then check its hash
     pub(crate) async fn download_file(
         client: Arc<Client>,
         url: &str,

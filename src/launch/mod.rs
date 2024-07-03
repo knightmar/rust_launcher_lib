@@ -29,6 +29,7 @@ impl GameLauncher {
         }
     }
 
+    // get the string for the libs to use on the cmdline to launch the game 
     fn get_libs_to_launch(&self) -> String {
         let lib_path = self.game_dir.clone() + &*Directory::Libraries.as_str();
         let client_path = self.game_dir.clone() + "client.jar";
@@ -48,15 +49,16 @@ impl GameLauncher {
         lib_str
     }
 
+    //launch the game using the access_token / pseudo
     pub fn launch(&self, access_token: &str, username: &str) -> Result<(), Box<dyn Error>> {
         let mut updater = Updater::new(self.version.as_str());
         if updater.update_files_list().is_err() {
             return Err("Error getting files list".into());
         }
-        
-        
+
+
         let lib_str = self.get_libs_to_launch();
-        let mut command = Command::new(   self.game_dir.clone() + &*Directory::Runtime.as_str() + "bin" + &*std::path::MAIN_SEPARATOR.to_string() + "java.exe");
+        let mut command = Command::new(self.game_dir.clone() + &*Directory::Runtime.as_str() + "bin" + &*std::path::MAIN_SEPARATOR.to_string() + "java.exe");
         command.args(&self.jvm_args);
         command.arg("-cp");
         command.arg(lib_str);
@@ -65,13 +67,12 @@ impl GameLauncher {
         command.args(["--version", &*self.version]);
         command.args(["--username", username]);
         command.args(["--gameDir", &*self.game_dir]);
+        command.args(["--assetIndex", updater.libs_manifest().as_ref().unwrap().asset_index.id.as_str()]);
         command.args([
             "--assetsDir",
             &*(self.game_dir.clone() + &*Directory::Assets.as_str()),
         ]);
-        
-        // println!("{:?}", updater.libs_manifest());
-        command.args(["--assetIndex", updater.libs_manifest().as_ref().unwrap().asset_index.id.as_str()]);
+
 
         println!("Launching game with command: {:?}", command);
 

@@ -16,10 +16,10 @@ impl Object {
         self.size
     }
 }
-
+// describe the json of an asset
 #[derive(Serialize, Deserialize, Clone)]
 pub struct AssetsRoot {
-                //   path  ; (hash + size)
+    //               path  ; (hash + size)
     objects: HashMap<String, Object>,
 }
 

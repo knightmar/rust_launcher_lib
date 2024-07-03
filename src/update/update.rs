@@ -3,6 +3,7 @@ use crate::update::structs::mc_assets::AssetsRoot;
 use crate::update::structs::mc_libs::LibsRoot;
 use crate::update::utils::{check_file_hash, get_asset_path_from_hash, get_lib_path_from_url};
 
+// struct that manage the update process, contains the manifests and the version of the game
 pub struct Updater {
     local_dir_path: String,
     version: String,
@@ -11,6 +12,7 @@ pub struct Updater {
 }
 
 impl Updater {
+    // function that will call the DownloadManager functions, then download the failed files
     pub fn install_files(&mut self) {
         println!("---- Installing files -----");
 
@@ -39,15 +41,13 @@ impl Updater {
             runtime.unwrap().block_on(async {
                 download_manager.download_fails().await;
             });
-            
+
             self.validate_files();
         }
-
-        // validate install
-
         println!("---- End installing files -----");
     }
 
+    // checking of the hashes to validate the correct installation of all the files needed
     pub fn validate_files(&self) {
         // libs
         for library in self.libs_manifest.clone().unwrap().libraries {
@@ -56,7 +56,7 @@ impl Updater {
                     self.local_dir_path.clone(),
                     library.downloads.artifact.url.as_str(),
                 )
-                .as_str(),
+                    .as_str(),
                 library.downloads.artifact.sha1.as_str(),
             ) {
                 println!("fails libs");
@@ -67,7 +67,7 @@ impl Updater {
         for asset in self.assets_manifest.clone().unwrap().objects() {
             if !check_file_hash(
                 get_asset_path_from_hash(self.local_dir_path.clone(), asset.1.hash()).1.as_str(),
-                asset.1.hash()
+                asset.1.hash(),
             ) {
                 println!("fails assets")
             };

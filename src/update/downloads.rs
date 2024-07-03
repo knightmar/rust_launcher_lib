@@ -13,6 +13,7 @@ use crate::update::utils::{
     Directory, get_asset_path_from_hash, get_file_name_from_url, get_lib_path_from_url,
 };
 
+// struct that describe an element to download
 #[derive(Clone, PartialEq)]
 pub struct DownloadElement {
     pub url: String,
@@ -21,6 +22,7 @@ pub struct DownloadElement {
     pub hash: Option<String>,
 }
 
+// base struct that is responsible to manage the downloads
 #[derive(Clone)]
 pub struct DownloadManager {
     client: Arc<Client>,
@@ -39,6 +41,7 @@ impl Default for DownloadManager {
 }
 
 impl DownloadManager {
+    // download of the libs
     pub async fn download_libs(&mut self, libs: Vec<Library>) {
         println!("Downloading libs");
         for lib in libs {
@@ -51,7 +54,7 @@ impl DownloadManager {
                 download_path.clone(),
                 &Some(lib.downloads.artifact.sha1.clone()),
             )
-            .await
+                .await
             {
                 self.fails.push(DownloadElement {
                     url: lib.downloads.artifact.url,
@@ -63,6 +66,7 @@ impl DownloadManager {
         }
     }
 
+    // download of the assets
     pub async fn download_assets(&mut self, assets: &HashMap<String, Object>) {
         println!("Downloading assets");
         for asset in assets {
@@ -80,7 +84,7 @@ impl DownloadManager {
                 download_path.1.to_string(),
                 &Some(hash.to_string()),
             )
-            .await
+                .await
             {
                 self.fails.push(DownloadElement {
                     url: url.to_string(),
@@ -92,6 +96,7 @@ impl DownloadManager {
         }
     }
 
+    // download + unzip of the java runtime in the correct dir
     pub async fn download_java(&self, java_version: String) {
         println!("Downloading java");
         let java_path =
@@ -100,7 +105,7 @@ impl DownloadManager {
         if std::path::Path::new(
             &(self.local_dir_path.to_string() + &(Directory::Runtime.as_str() + "bin")),
         )
-        .exists()
+            .exists()
         {
             println!("File already exists: {}", java_path);
             return;
@@ -114,15 +119,15 @@ impl DownloadManager {
             java_path.clone(),
             &None,
         )
-        .await
-        .expect("TODO: panic message");
+            .await
+            .expect("TODO: panic message");
 
         if zip_extract::extract(
             Cursor::new(fs::read(&java_path).unwrap()),
             (self.local_dir_path.clone() + &*Directory::Runtime.as_str()).as_ref(),
             true,
         )
-        .is_err()
+            .is_err()
         {
             return;
         }
@@ -130,6 +135,7 @@ impl DownloadManager {
         if fs::remove_file(java_path.clone()).is_err() {}
     }
 
+    // download of the client.jar + asset index
     pub async fn download_game_files(&mut self, root: LibsRoot) {
         let mut files_to_dl: Vec<DownloadElement> = vec![];
 
@@ -160,13 +166,14 @@ impl DownloadManager {
                 file.path.clone(),
                 &file.hash,
             )
-            .await
+                .await
             {
                 self.fails.push(file);
             };
         }
     }
 
+    // function that takes the failed downloads of the other download functions, and re-dl the fills that had errors
     pub async fn download_fails(&mut self) {
         while !self.fails.is_empty() {
             let current_fails = std::mem::take(&mut self.fails);

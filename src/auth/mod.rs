@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use mc_auth::AuthFlow;
-use reqwest::header::{HeaderMap, AUTHORIZATION};
+use reqwest::header::{AUTHORIZATION, HeaderMap};
 
 use crate::auth::profile::User;
 

@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+// json that describes a version of the game
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct Version {
     id: String,

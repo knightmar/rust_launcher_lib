@@ -2,9 +2,10 @@ use std::{fs, io};
 
 use sha2::Digest;
 
-use crate::update::structs::mc_assets::AssetsRoot;
-use crate::update::structs::mc_libs::LibsRoot;
-use crate::update::Updater;
+// ----------------------------------------- //
+// Utils files that contains utils functions //
+// ----------------------------------------- //
+
 
 pub(crate) fn get_file_name_from_url(url: &str) -> String {
     url.split('/').last().unwrap().to_string()
@@ -54,6 +55,7 @@ impl Directory {
     }
 }
 
+// creating all the dirs of the file tree
 pub fn check_all_directories(base_dir: String) -> bool {
     if base_dir.is_empty() {
         eprintln!("Please set the local directory path before installing files");
@@ -84,10 +86,10 @@ pub fn check_all_directories(base_dir: String) -> bool {
     };
 
     // NOTE: the assets directories are created in the download_assets function (src/update/downloads.rs)
-
     true
 }
 
+// check hash of a file
 pub fn check_file_hash(file_path: &str, hash: &str) -> bool {
     let file = fs::File::open(file_path);
     if let Ok(mut file) = file {
