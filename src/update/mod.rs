@@ -9,20 +9,20 @@ use crate::update::downloads::DownloadManager;
 use crate::update::structs::mc_assets::AssetsRoot;
 use crate::update::structs::mc_libs::LibsRoot;
 use crate::update::structs::mc_versions::{Version, Versions};
-use crate::update::update::Updater;
+use crate::update::updater::Updater;
 use crate::update::utils::check_file_hash;
 
 pub mod downloads;
 pub(crate) mod java;
 pub mod structs;
 pub mod utils;
-pub(crate) mod update;
+pub(crate) mod updater;
 
 
 impl Updater {
     // get the version list from the json
     pub fn get_versions_list(&self) -> Option<Versions> {
-        let client = reqwest::Client::new();
+        let client = Client::new();
         let mut versions = None;
 
         let runtime = tokio::runtime::Runtime::new().unwrap();

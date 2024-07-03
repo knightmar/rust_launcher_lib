@@ -2,7 +2,7 @@ use std::error::Error;
 use std::process::Command;
 
 use crate::launch::utils::get_relative_local_dir_path;
-use crate::update::update::Updater;
+use crate::update::updater::Updater;
 use crate::update::utils::Directory;
 
 mod utils;

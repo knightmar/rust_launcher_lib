@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::fs;
-use std::hash::Hash;
 use std::io::Cursor;
 use std::sync::Arc;
 
@@ -78,7 +77,7 @@ impl DownloadManager {
 
             let download_path = get_asset_path_from_hash(self.local_dir_path.clone(), hash);
 
-            if let Err(result) = Self::download_file(
+            if let Err(_result) = Self::download_file(
                 self.client.clone(),
                 url,
                 download_path.1.to_string(),
@@ -160,7 +159,7 @@ impl DownloadManager {
         });
 
         for file in files_to_dl {
-            if let Err(result) = Self::download_file(
+            if let Err(_result) = Self::download_file(
                 self.client.clone(),
                 file.url.as_str(),
                 file.path.clone(),

@@ -98,7 +98,7 @@ pub fn check_file_hash(file_path: &str, hash: &str) -> bool {
         let file_hash = hasher.finalize();
         let computed_hash = hex::encode(file_hash);
         hash == computed_hash
-    } else if let Err(e) = file {
+    } else if let Err(_e) = file {
         false
     } else {
         false

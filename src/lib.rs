@@ -9,7 +9,7 @@ pub mod update;
 mod tests {
     use crate::auth::Authenticator;
     use crate::launch;
-    use crate::update::update::Updater;
+    use crate::update::updater::Updater;
 
     #[test]
     fn test_auth() {

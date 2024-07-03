@@ -56,7 +56,7 @@ pub struct User {
     name: String,
     skins: Vec<Skin>,
     capes: Vec<Cape>,
-    profileActions: serde_json::Value,
+    profileActions: Value,
 }
 impl User {
     pub fn new() -> Self {
@@ -80,7 +80,7 @@ impl User {
     pub fn capes(&self) -> &Vec<Cape> {
         &self.capes
     }
-    pub fn profileActions(&self) -> &serde_json::Value {
+    pub fn profileActions(&self) -> &Value {
         &self.profileActions
     }
 }
