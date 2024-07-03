@@ -1,6 +1,7 @@
 use crate::update::downloads::DownloadManager;
 use crate::update::structs::mc_assets::AssetsRoot;
 use crate::update::structs::mc_libs::LibsRoot;
+use crate::update::utils::{check_file_hash, get_asset_path_from_hash, get_lib_path_from_url};
 
 pub struct Updater {
     local_dir_path: String,
@@ -26,19 +27,51 @@ impl Updater {
                     .download_assets(self.assets_manifest.clone().unwrap().objects())
                     .await;
                 download_manager
-                    .download_java(self.libs_manifest.clone().unwrap().java_version)
+                    .download_java(self.libs_manifest.clone().unwrap().java_version.to_string())
                     .await;
                 download_manager
                     .download_game_files(self.libs_manifest.clone().unwrap())
                     .await;
             });
 
+            let runtime = tokio::runtime::Runtime::new();
             println!("{}", download_manager.fails().len());
+            runtime.unwrap().block_on(async {
+                download_manager.download_fails().await;
+            });
+            
+            self.validate_files();
         }
 
         // validate install
 
         println!("---- End installing files -----");
+    }
+
+    pub fn validate_files(&self) {
+        // libs
+        for library in self.libs_manifest.clone().unwrap().libraries {
+            if !check_file_hash(
+                get_lib_path_from_url(
+                    self.local_dir_path.clone(),
+                    library.downloads.artifact.url.as_str(),
+                )
+                .as_str(),
+                library.downloads.artifact.sha1.as_str(),
+            ) {
+                println!("fails libs");
+            };
+        }
+
+        // assets
+        for asset in self.assets_manifest.clone().unwrap().objects() {
+            if !check_file_hash(
+                get_asset_path_from_hash(self.local_dir_path.clone(), asset.1.hash()).1.as_str(),
+                asset.1.hash()
+            ) {
+                println!("fails assets")
+            };
+        }
     }
 
     pub fn local_dir_path(&self) -> &str {

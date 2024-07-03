@@ -35,12 +35,12 @@ mod tests {
 
     #[test]
     fn launch_test() {
-        let mut updater = Updater::new("1.19.4");
+        let mut updater = Updater::new("1.21");
         updater.set_relative_local_dir_path(".banane");
         updater.install_files();
         
         let launcher = launch::GameLauncher::new(
-            "1.19.4".to_string(),
+            "1.21".to_string(),
             ".banane".to_string(),
             vec![],
             vec![],

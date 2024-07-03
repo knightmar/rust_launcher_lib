@@ -128,6 +128,10 @@ impl DownloadManager {
         path: String,
         hash: &Option<String>,
     ) -> Result<(), String> {
+        if std::path::Path::new(&path).exists() {
+            return Ok(());
+        }
+
         // Send a GET request
         let response = client
             .get(url)

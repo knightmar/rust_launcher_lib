@@ -73,7 +73,7 @@ impl GameLauncher {
         // println!("{:?}", updater.libs_manifest());
         command.args(["--assetIndex", updater.libs_manifest().as_ref().unwrap().asset_index.id.as_str()]);
 
-        // println!("Launching game with command: {:?}", command);
+        println!("Launching game with command: {:?}", command);
 
         let output = command.output()?;
         println!("{}", String::from_utf8_lossy(&output.stdout));

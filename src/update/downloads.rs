@@ -1,12 +1,17 @@
 use std::collections::HashMap;
+use std::fs;
 use std::hash::Hash;
+use std::io::Cursor;
 use std::sync::Arc;
 
 use reqwest::Client;
 
+use crate::update::java;
 use crate::update::structs::mc_assets::Object;
 use crate::update::structs::mc_libs::{Library, LibsRoot};
-use crate::update::utils::{get_asset_path_from_hash, get_lib_path_from_url};
+use crate::update::utils::{
+    Directory, get_asset_path_from_hash, get_file_name_from_url, get_lib_path_from_url,
+};
 
 #[derive(Clone, PartialEq)]
 pub struct DownloadElement {
@@ -35,6 +40,7 @@ impl Default for DownloadManager {
 
 impl DownloadManager {
     pub async fn download_libs(&mut self, libs: Vec<Library>) {
+        println!("Downloading libs");
         for lib in libs {
             let download_path =
                 get_lib_path_from_url(self.local_dir_path.clone(), &lib.downloads.artifact.path);
@@ -58,6 +64,7 @@ impl DownloadManager {
     }
 
     pub async fn download_assets(&mut self, assets: &HashMap<String, Object>) {
+        println!("Downloading assets");
         for asset in assets {
             let hash = asset.1.hash();
             let url = &("https://resources.download.minecraft.net/".to_string()
@@ -85,11 +92,103 @@ impl DownloadManager {
         }
     }
 
-    pub async fn download_java(&self, java_version: u8) {}
+    pub async fn download_java(&self, java_version: String) {
+        println!("Downloading java");
+        let java_path =
+            self.local_dir_path.to_string() + &*Directory::Runtime.as_str() + "java.zip";
+        let java_url = java::get_java_zulu_dl_link(java_version).await.unwrap();
+        if std::path::Path::new(
+            &(self.local_dir_path.to_string() + &(Directory::Runtime.as_str() + "bin")),
+        )
+        .exists()
+        {
+            println!("File already exists: {}", java_path);
+            return;
+        } else {
+            println!("Downloading: {}", java_path);
+        }
 
-    pub async fn download_game_files(&self, root: LibsRoot) {}
+        DownloadManager::download_file(
+            Arc::clone(&self.client),
+            java_url.as_str(),
+            java_path.clone(),
+            &None,
+        )
+        .await
+        .expect("TODO: panic message");
 
-    pub async fn download_fails(&self) {}
+        if zip_extract::extract(
+            Cursor::new(fs::read(&java_path).unwrap()),
+            (self.local_dir_path.clone() + &*Directory::Runtime.as_str()).as_ref(),
+            true,
+        )
+        .is_err()
+        {
+            return;
+        }
+
+        if fs::remove_file(java_path.clone()).is_err() {}
+    }
+
+    pub async fn download_game_files(&mut self, root: LibsRoot) {
+        let mut files_to_dl: Vec<DownloadElement> = vec![];
+
+        println!("Downloading game files");
+        let client_path = self.local_dir_path.to_string() + "client.jar";
+        let client_url = root.client.url.clone();
+
+        files_to_dl.push(DownloadElement {
+            url: client_url,
+            path: client_path,
+            dl_tries: 0,
+            hash: Some(root.client.sha1),
+        });
+
+        files_to_dl.push(DownloadElement {
+            url: root.asset_index.url.clone(),
+            path: self.local_dir_path.clone()
+                + &Directory::Indexes.as_str()
+                + &get_file_name_from_url(root.asset_index.url.as_str()),
+            dl_tries: 0,
+            hash: Some(root.asset_index.sha1),
+        });
+
+        for file in files_to_dl {
+            if let Err(result) = Self::download_file(
+                self.client.clone(),
+                file.url.as_str(),
+                file.path.clone(),
+                &file.hash,
+            )
+            .await
+            {
+                self.fails.push(file);
+            };
+        }
+    }
+
+    pub async fn download_fails(&mut self) {
+        while !self.fails.is_empty() {
+            let current_fails = std::mem::take(&mut self.fails);
+            for fail in current_fails {
+                if Self::download_file(
+                    self.client.clone(),
+                    &fail.url,
+                    fail.path.clone(),
+                    &fail.hash,
+                )
+                    .await.is_err()
+                {
+                    self.fails.push(DownloadElement {
+                        url: fail.url,
+                        path: fail.path,
+                        dl_tries: fail.dl_tries + 1,
+                        hash: fail.hash,
+                    });
+                }
+            }
+        }
+    }
 
     pub fn new(path: String) -> Self {
         Self {
