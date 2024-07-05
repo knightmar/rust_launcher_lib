@@ -1,5 +1,5 @@
+use std::{env, fs};
 use std::collections::HashMap;
-use std::fs;
 use std::io::Cursor;
 use std::sync::Arc;
 
@@ -44,16 +44,14 @@ impl DownloadManager {
     pub async fn download_libs(&mut self, libs: Vec<Library>) {
         println!("Downloading libs");
         for lib in libs {
-            let download_path =
-                get_lib_path_from_url(self.local_dir_path.clone(), &lib.downloads.artifact.path);
+            let download_path = get_lib_path_from_url(self.local_dir_path.clone(), &lib.downloads.artifact.path);
 
             if let Err(_result) = DownloadManager::download_file(
                 self.client.clone(),
                 &lib.downloads.artifact.url,
                 download_path.clone(),
                 &Some(lib.downloads.artifact.sha1.clone()),
-            )
-                .await
+            ).await
             {
                 self.fails.push(DownloadElement {
                     url: lib.downloads.artifact.url,
@@ -70,10 +68,7 @@ impl DownloadManager {
         println!("Downloading assets");
         for asset in assets {
             let hash = asset.1.hash();
-            let url = &("https://resources.download.minecraft.net/".to_string()
-                + hash[0..2].to_string().as_str()
-                + std::path::MAIN_SEPARATOR_STR
-                + hash);
+            let url = &("https://resources.download.minecraft.net/".to_string() + hash[0..2].to_string().as_str() + std::path::MAIN_SEPARATOR_STR + hash);
 
             let download_path = get_asset_path_from_hash(self.local_dir_path.clone(), hash);
 
@@ -82,8 +77,7 @@ impl DownloadManager {
                 url,
                 download_path.1.to_string(),
                 &Some(hash.to_string()),
-            )
-                .await
+            ).await
             {
                 self.fails.push(DownloadElement {
                     url: url.to_string(),
@@ -98,13 +92,12 @@ impl DownloadManager {
     // download + unzip of the java runtime in the correct dir
     pub async fn download_java(&self, java_version: String) {
         println!("Downloading java");
-        let java_path =
-            self.local_dir_path.to_string() + &*Directory::Runtime.as_str() + "java.zip";
+
+        let java_path = self.local_dir_path.to_string() + &*Directory::Runtime.as_str() + "java.zip";
         let java_url = java::get_java_zulu_dl_link(java_version).await.unwrap();
         if std::path::Path::new(
             &(self.local_dir_path.to_string() + &(Directory::Runtime.as_str() + "bin")),
-        )
-            .exists()
+        ).exists()
         {
             println!("File already exists: {}", java_path);
             return;
@@ -117,16 +110,14 @@ impl DownloadManager {
             java_url.as_str(),
             java_path.clone(),
             &None,
-        )
-            .await
-            .expect("TODO: panic message");
+        ).await.expect("TODO: panic message");
+
 
         if zip_extract::extract(
             Cursor::new(fs::read(&java_path).unwrap()),
             (self.local_dir_path.clone() + &*Directory::Runtime.as_str()).as_ref(),
             true,
-        )
-            .is_err()
+        ).is_err()
         {
             return;
         }
@@ -151,9 +142,7 @@ impl DownloadManager {
 
         files_to_dl.push(DownloadElement {
             url: root.asset_index.url.clone(),
-            path: self.local_dir_path.clone()
-                + &Directory::Indexes.as_str()
-                + &get_file_name_from_url(root.asset_index.url.as_str()),
+            path: self.local_dir_path.clone() + &Directory::Indexes.as_str() + &get_file_name_from_url(root.asset_index.url.as_str()),
             dl_tries: 0,
             hash: Some(root.asset_index.sha1),
         });
@@ -164,8 +153,7 @@ impl DownloadManager {
                 file.url.as_str(),
                 file.path.clone(),
                 &file.hash,
-            )
-                .await
+            ).await
             {
                 self.fails.push(file);
             };
@@ -182,8 +170,7 @@ impl DownloadManager {
                     &fail.url,
                     fail.path.clone(),
                     &fail.hash,
-                )
-                    .await.is_err()
+                ).await.is_err()
                 {
                     self.fails.push(DownloadElement {
                         url: fail.url,

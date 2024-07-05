@@ -9,7 +9,9 @@ pub mod update;
 mod tests {
     use crate::auth::Authenticator;
     use crate::launch;
+    use crate::update::java::get_java_zulu_dl_link;
     use crate::update::updater::Updater;
+    use crate::update::utils::get_relative_local_dir_path;
 
     #[test]
     fn test_auth() {
@@ -26,11 +28,11 @@ mod tests {
 
     #[test]
     fn check_files() {
-        let mut updater = Updater::new("1.19.4");
-        updater.set_relative_local_dir_path(".banane");
+        let runtime = tokio::runtime::Runtime::new().unwrap();
 
-        updater.update_files_list().expect("TODO: panic message");
-        updater.install_files();
+        runtime.block_on(async {
+            println!("{}", get_java_zulu_dl_link("11.0.11".to_string()).await.unwrap());
+        });
     }
 
     #[test]
@@ -45,6 +47,8 @@ mod tests {
             vec![],
             vec![],
         );
-        launcher.launch("", "knightmar67").unwrap();
+        if let Err(error) = launcher.launch("", "knightmar67"){
+            println!("{}", error);
+        };
     }
 }

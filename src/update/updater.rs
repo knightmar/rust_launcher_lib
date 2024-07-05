@@ -1,7 +1,7 @@
 use crate::update::downloads::DownloadManager;
 use crate::update::structs::mc_assets::AssetsRoot;
 use crate::update::structs::mc_libs::LibsRoot;
-use crate::update::utils::{check_file_hash, get_asset_path_from_hash, get_lib_path_from_url};
+use crate::update::utils::{check_file_hash, get_asset_path_from_hash, get_lib_path_from_url, get_relative_local_dir_path};
 
 // struct that manage the update process, contains the manifests and the version of the game
 pub struct Updater {
@@ -107,12 +107,9 @@ impl Updater {
     }
 
     pub fn set_relative_local_dir_path(&mut self, local_dir_path: &str) {
-        let app_Root = std::env::var("APPDATA").expect("No APP_Root directory");
+        let app_Root = get_relative_local_dir_path(local_dir_path);
         self.set_local_dir_path(
             app_Root
-                + std::path::MAIN_SEPARATOR_STR
-                + local_dir_path
-                + std::path::MAIN_SEPARATOR_STR,
         );
     }
 

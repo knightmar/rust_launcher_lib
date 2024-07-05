@@ -1,11 +1,10 @@
+use std::env::consts::OS;
 use std::error::Error;
 use std::process::Command;
 
-use crate::launch::utils::get_relative_local_dir_path;
 use crate::update::updater::Updater;
-use crate::update::utils::Directory;
+use crate::update::utils::{Directory, get_relative_local_dir_path};
 
-mod utils;
 
 pub(crate) struct GameLauncher {
     version: String,
@@ -33,16 +32,17 @@ impl GameLauncher {
     fn get_libs_to_launch(&self) -> String {
         let lib_path = self.game_dir.clone() + &*Directory::Libraries.as_str();
         let client_path = self.game_dir.clone() + "client.jar";
+        let separator = if OS == "windows" { ";" } else { ":" };
 
         let mut lib_str = String::new();
-        lib_str.push_str(&(client_path.as_str().to_owned() + ";"));
+        lib_str.push_str(&(client_path.as_str().to_owned() + separator));
 
         for entry in std::fs::read_dir(lib_path).unwrap() {
             let entry = entry.unwrap();
             let path = entry.path();
             if path.is_file() {
                 lib_str.push_str(path.to_str().unwrap());
-                lib_str.push(';');
+                lib_str.push(separator.parse().unwrap());
             }
         }
 
@@ -56,9 +56,11 @@ impl GameLauncher {
             return Err("Error getting files list".into());
         }
 
+        let extension = if cfg!(windows) {".exe"} else {""};
+
 
         let lib_str = self.get_libs_to_launch();
-        let mut command = Command::new(self.game_dir.clone() + &*Directory::Runtime.as_str() + "bin" + &*std::path::MAIN_SEPARATOR.to_string() + "java.exe");
+        let mut command = Command::new(self.game_dir.clone() + &*Directory::Runtime.as_str() + "bin" + &*std::path::MAIN_SEPARATOR.to_string() + "java" + extension);
         command.args(&self.jvm_args);
         command.arg("-cp");
         command.arg(lib_str);
