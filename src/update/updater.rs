@@ -11,6 +11,7 @@ pub struct Updater {
     assets_manifest: Option<AssetsRoot>,
 }
 
+// check files before adding them to the queue
 impl Updater {
     // function that will call the DownloadManager functions, then download the failed files
     pub fn install_files(&mut self) {
@@ -36,6 +37,8 @@ impl Updater {
                     .await;
             });
 
+            
+            // fails -> downloads direct
             let runtime = tokio::runtime::Runtime::new();
             println!("{}", download_manager.fails().len());
             runtime.unwrap().block_on(async {
@@ -113,7 +116,7 @@ impl Updater {
         );
     }
 
-    pub fn new(version: &str) -> Self {
+    pub fn new<V: ToString>(version: V) -> Self {
         Self {
             local_dir_path: "".to_string(),
             version: version.to_string(),

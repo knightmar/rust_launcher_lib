@@ -1,3 +1,4 @@
+use std::{clone, fs};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -18,15 +19,16 @@ impl LibsRoot {
             serde_json::from_value(json_object["assetIndex"].clone()).unwrap();
         let java_version: u8 =
             serde_json::from_value(json_object["javaVersion"]["majorVersion"].clone()).unwrap();
-        let libraries: Vec<Library> =
-            serde_json::from_value(json_object["libraries"].clone()).unwrap();
+        
         let client: Client = serde_json::from_value(json_object["downloads"]["client"].clone()).unwrap();
+        
+        let 
 
 
         Ok(LibsRoot {
             asset_index,
             java_version,
-            libraries,
+            libraries: libraries.libraries,
             client,
         })
     }
@@ -42,27 +44,6 @@ pub struct AssetIndex {
     pub url: String,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Library {
-    pub downloads: Download,
-    pub name: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Download {
-    pub artifact: Artifact,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Artifact {
-    pub path: String,
-    pub sha1: String,
-    pub size: i64,
-    pub url: String,
-}
 
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
