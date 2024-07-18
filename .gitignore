@@ -1,0 +1,9 @@
+/target
+/gttp.http
+/Cargo.lock
+/target/
+/tests/
+/launch_game.bat
+/logs/
+.idea
+/test.txt
