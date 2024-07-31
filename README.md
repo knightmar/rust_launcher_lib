@@ -3,6 +3,15 @@
 
 This library was created to allow the creation of launchers for the minecraft video game, using the rust programming language.
 
+## Current state
+The lib is in early development, some functionalities are already available but not much.
+- [x] Vanilla install (versions > 1.13, other versions will be implemented soon)
+- [x] Game launch (only on vanilla)
+- [x] Authentication (Microsoft and offline)
+- [ ] Modloader installation (Forge, Fabric, Quilt, Neoforge)
+- [ ] Mod installation (CurseForge, Modrinth, personnal server)
+- [ ] Custom files
+
 ## Code organisation
 
 The code of this project is organized in a simple way: 
