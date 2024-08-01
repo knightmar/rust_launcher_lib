@@ -80,6 +80,8 @@ Here are the main librairies that i'm using on this project :
 (The other libs I use can be found in cargo.toml file)
 
 
+# Thanks
+This library is inspired by [Flow Updater](https://github.com/FlowArg/FlowUpdater), a great library used to make launchers in Java. Go check the repo !
 
 # License
 MIT License
