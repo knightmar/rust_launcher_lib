@@ -1,3 +1,6 @@
+# Warning ⚠️ 
+Currently, my studies are taking me all my time, I don't have any moment to work on this lib, I won't let down the project, but it's currently at a down state, stay tuned for any updates here
+Sorry for any inconveniences
 
 # Rust Launcher Lib
 
