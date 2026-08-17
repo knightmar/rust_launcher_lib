@@ -1,22 +1,42 @@
-use tokio::runtime::Runtime;
-use crate::auth::{auth_xbox_live, request_auth_code};
+pub mod auth;
 
-mod auth;
+#[cfg(test)]
+mod test {
+    use crate::auth::Authenticator;
+    use std::env;
+    use tokio::runtime::Runtime;
 
-#[test]
-fn test_xbox_auth() {
-    let live = Runtime::new().unwrap().block_on(auth_xbox_live());
+    #[test]
+    fn test_authenticator() {
+        dotenv::dotenv().ok();
 
-    println!("{:#?}", live);
+        let client_id = env::var("CLIENT_ID").unwrap();
+        let oauth = Authenticator::request_auth_code(&client_id);
 
-    assert!(live.is_ok())
-}
+        assert!(oauth.is_ok(), "{}", oauth.err().unwrap());
+        let oauth = oauth.unwrap();
+        println!("[capture_code] : {}", oauth);
 
-#[test]
-fn test_oauth2() {
-    let oauth = request_auth_code();
+        let token = Runtime::new()
+            .unwrap()
+            .block_on(Authenticator::exchange_code_for_token(&client_id, &oauth));
 
-    println!("{:#?}", oauth);
+        assert!(token.is_ok(), "{}", token.err().unwrap());
+        let token = token.unwrap();
+        println!("[access_token] : {}", token.access_token);
 
-    assert!(oauth.is_ok())
+        let live = Runtime::new()
+            .unwrap()
+            .block_on(Authenticator::auth_xbox_live(&token.access_token));
+
+        assert!(live.is_ok(), "{:?}", live.err().unwrap());
+        print!("[xbl token] : {}", live.ok().unwrap().token);
+
+        let live = Runtime::new()
+            .unwrap()
+            .block_on(Authenticator::auth_xsts(&token.access_token));
+
+        assert!(live.is_ok(), "{:?}", live.err().unwrap());
+        print!("[xsts token] : {}", live.ok().unwrap().token);
+    }
 }
