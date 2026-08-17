@@ -1,3 +1,6 @@
+use serde_derive::{Deserialize, Serialize};
+use serde_json::Value;
+
 #[derive(Deserialize, Debug)]
 pub struct OAuthTokenResponse {
     pub access_token: String,
@@ -5,11 +8,11 @@ pub struct OAuthTokenResponse {
     pub expires_in: u64,
 }
 
-use serde_derive::{Deserialize, Serialize};
+
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct MinecraftAuthResponse {
+pub struct XboxLiveResponse {
     #[serde(rename = "IssueInstant")]
     pub issue_instant: String,
     #[serde(rename = "NotAfter")]
@@ -30,4 +33,100 @@ pub struct DisplayClaims {
 #[serde(rename_all = "camelCase")]
 pub struct Xui {
     pub uhs: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct XstsError {
+    #[serde(rename = "Identity")]
+    pub identity: String,
+    #[serde(rename = "XErr")]
+    pub xerr: i64,
+    #[serde(rename = "Message")]
+    pub message: String,
+    #[serde(rename = "Redirect")]
+    pub redirect: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MinecraftAuthResponse {
+    pub username: String,
+    pub roles: Vec<Value>,
+    #[serde(rename = "access_token")]
+    pub access_token: String,
+    #[serde(rename = "token_type")]
+    pub token_type: String,
+    #[serde(rename = "expires_in")]
+    pub expires_in: i64,
+}
+
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MinecraftStoreResponse {
+    pub items: Vec<Item>,
+    pub signature: String,
+    pub key_id: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Item {
+    pub name: String,
+    pub signature: String,
+}
+
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MinecraftProfile {
+    pub id: String,
+    pub name: String,
+    pub skins: Vec<Skin>,
+    pub capes: Vec<Cape>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Skin {
+    pub id: String,
+    pub state: String,
+    pub url: String,
+    pub variant: String,
+    pub alias: Option<String>,
+}
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Cape {
+    pub id: String,
+    pub state: String,
+    pub url: String,
+    pub alias: Option<String>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PublicKeysResponse {
+    pub profile_property_keys: Vec<ProfilePropertyKey>,
+    pub player_certificate_keys: Vec<PlayerCertificateKey>,
+    pub authentication_keys: Vec<AuthenticationKey>,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ProfilePropertyKey {
+    pub public_key: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct PlayerCertificateKey {
+    pub public_key: String,
+}
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AuthenticationKey {
+    pub public_key: String,
 }
