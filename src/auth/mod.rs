@@ -1,6 +1,4 @@
-use std::time::Duration;
 use crate::auth::errors::AuthErrors;
-use crate::auth::errors::AuthErrors::{Minecraft, XboxLive, Xsts};
 use crate::auth::structs::{MinecraftAuthResponse, MinecraftProfile, MinecraftStoreResponse, OAuthTokenResponse, XboxLiveResponse, XstsError};
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
@@ -10,6 +8,7 @@ use rsa::signature::digest::Digest;
 use rsa::{Pkcs1v15Sign, RsaPublicKey};
 use serde_json::json;
 use sha2::Sha256;
+use std::time::Duration;
 use tiny_http::{Response, Server};
 
 mod errors;
@@ -31,9 +30,7 @@ EYblHbogFGPRFU++NrSQRX0CAwEAAQ==
 -----END PUBLIC KEY-----"#;
 
 pub struct Authenticator {
-    oauth_token_response: OAuthTokenResponse,
-    xbl_token: String,
-    user_hash: String,
+
 }
 
 impl Authenticator {
