@@ -1,8 +1,10 @@
 pub mod auth;
+mod update;
 
 #[cfg(test)]
 mod test {
     use crate::auth::Authenticator;
+    use crate::update::Updater;
     use std::env;
     use tokio::runtime::Runtime;
 
@@ -53,31 +55,76 @@ mod test {
         let xsts_struct = xsts_response.unwrap();
         println!("[xsts token] : {}", xsts_struct.token);
 
-        let minecraft_response = Runtime::new().unwrap().block_on(Authenticator::auth_minecraft(&xsts_struct.display_claims.xui[0].uhs, &xsts_struct.token));
+        let minecraft_response = Runtime::new()
+            .unwrap()
+            .block_on(Authenticator::auth_minecraft(
+                &xsts_struct.display_claims.xui[0].uhs,
+                &xsts_struct.token,
+            ));
 
-        assert!(minecraft_response.is_ok(), "{:?}", minecraft_response.err().unwrap());
+        assert!(
+            minecraft_response.is_ok(),
+            "{:?}",
+            minecraft_response.err().unwrap()
+        );
         let minecraft_response = minecraft_response.unwrap();
-        println!("[minecraft_access_token] : {}", minecraft_response.access_token);
+        println!(
+            "[minecraft_access_token] : {}",
+            minecraft_response.access_token
+        );
 
-        let check_ownership_response = Runtime::new().unwrap().block_on(Authenticator::check_game_ownership(minecraft_response.access_token.as_str()));
-        assert!(check_ownership_response.is_ok(), "{:?}", check_ownership_response.err().unwrap());
+        let check_ownership_response =
+            Runtime::new()
+                .unwrap()
+                .block_on(Authenticator::check_game_ownership(
+                    minecraft_response.access_token.as_str(),
+                ));
+        assert!(
+            check_ownership_response.is_ok(),
+            "{:?}",
+            check_ownership_response.err().unwrap()
+        );
         println!("Game owned : {}", check_ownership_response.ok().unwrap());
 
-        let minecraft_profile = Runtime::new().unwrap().block_on(Authenticator::get_minecraft_profile(minecraft_response.access_token.as_str()));
-        assert!(minecraft_profile.is_ok(), "{:?}", minecraft_profile.err().unwrap());
+        let minecraft_profile =
+            Runtime::new()
+                .unwrap()
+                .block_on(Authenticator::get_minecraft_profile(
+                    minecraft_response.access_token.as_str(),
+                ));
+        assert!(
+            minecraft_profile.is_ok(),
+            "{:?}",
+            minecraft_profile.err().unwrap()
+        );
 
         let minecraft_profile = minecraft_profile.unwrap();
         println!("Welcome {}", minecraft_profile.name);
     }
 
     #[test]
-    fn test_all() {
+    fn test_auth_abstract() {
         dotenv::dotenv().ok();
 
         let client_id = env::var("CLIENT_ID").unwrap();
 
-        let profile = Runtime::new().unwrap().block_on(Authenticator::auth(client_id.as_str()));
+        let profile = Runtime::new()
+            .unwrap()
+            .block_on(Authenticator::auth(client_id.as_str()));
         assert!(profile.is_ok());
         println!("Welcome {}", profile.unwrap().name);
+    }
+
+    #[test]
+    fn test_updater() {
+        let mut updater = Updater::new(
+            "26.2".to_string(),
+            "/home/knightmar/.knightlauncher".to_string(),
+        );
+
+        println!(
+            "{:?}",
+            Runtime::new().unwrap().block_on(updater.install_version())
+        );
     }
 }
