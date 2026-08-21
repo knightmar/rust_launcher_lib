@@ -1,14 +1,13 @@
 use crate::update::errors::UpdateErrors;
-use crate::update::errors::UpdateErrors::Install;
 use crate::update::structs::UpdateFile;
+use crate::update::verify_file;
 use futures_util::future::join_all;
-use futures_util::{FutureExt, StreamExt}; // <-- Ajoute ceci
+use futures_util::StreamExt;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::io::AsyncWriteExt;
 use tokio::sync::Semaphore;
-use crate::update::verify_file;
 
 pub struct Downloader {
     pub files: Vec<UpdateFile>,
@@ -17,7 +16,6 @@ pub struct Downloader {
 }
 
 impl Downloader {
-
     pub fn new(max_concurrent_downloads: usize) -> Self {
         Downloader {
             files: vec![],
@@ -52,7 +50,10 @@ impl Downloader {
         }
 
         if path.exists() {
-            println!("  - File: {} already found, checking if valid...", file.local_path);
+            println!(
+                "  - File: {} already found, checking if valid...",
+                file.local_path
+            );
             match verify_file(file.clone()).await {
                 Ok(true) => return Ok(()),
                 Ok(false) => {

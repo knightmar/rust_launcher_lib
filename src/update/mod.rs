@@ -1,7 +1,9 @@
 use crate::update::downloader::Downloader;
 use crate::update::errors::UpdateErrors;
 use crate::update::errors::UpdateErrors::{Download, Fetch, Install, Verification};
-use crate::update::json_structs::{UniversalVersionJson, VersionEntry, VersionManifest};
+use crate::update::json_structs::{
+    AssetIndex, AssetManifest, UniversalVersionJson, VersionEntry, VersionManifest,
+};
 use crate::update::structs::UpdateFile;
 use futures_util::future::join_all;
 use futures_util::TryStreamExt;
@@ -15,10 +17,10 @@ use tokio::fs::File;
 use tokio::io::AsyncReadExt;
 use tokio::sync::Semaphore;
 
-mod downloader;
+pub(crate) mod downloader;
 mod errors;
 mod json_structs;
-mod structs;
+pub(crate) mod structs;
 
 pub struct Updater {
     pub version: String,
@@ -41,7 +43,7 @@ impl Updater {
             .build()
             .unwrap()
     }
-    pub async fn get_version_manifest() -> Result<VersionManifest, UpdateErrors> {
+    pub(crate) async fn get_version_manifest() -> Result<VersionManifest, UpdateErrors> {
         Self::client()
             .get("https://piston-meta.mojang.com/mc/game/version_manifest_v2.json")
             .send()
@@ -52,7 +54,9 @@ impl Updater {
             .map_err(|e| Fetch(e.to_string()))
     }
 
-    pub async fn get_version(version: &VersionEntry) -> Result<UniversalVersionJson, UpdateErrors> {
+    pub(crate) async fn get_version(
+        version: &VersionEntry,
+    ) -> Result<UniversalVersionJson, UpdateErrors> {
         Self::client()
             .get(&version.url)
             .send()
@@ -63,7 +67,7 @@ impl Updater {
             .map_err(|e1| Download(e1.to_string()))
     }
 
-    pub async fn install_special_files(
+    pub(crate) async fn install_special_files(
         &mut self,
         version: &UniversalVersionJson,
     ) -> Result<(), UpdateErrors> {
@@ -88,8 +92,9 @@ impl Updater {
                     .join(Path::new(
                         format!("assets/indexes/{}.json", index.clone().id).as_str(),
                     ))
-                    .into_string()
-                    .unwrap(),
+                    .to_str()
+                    .ok_or_else(|| Install("Path malformed".to_string()))?
+                    .to_string(),
             },
             UpdateFile {
                 url: client.url,
@@ -98,8 +103,9 @@ impl Updater {
                 size: client.size as u64,
                 local_path: Path::new(&self.game_files_location.clone())
                     .join(Path::new("client.jar"))
-                    .into_string()
-                    .unwrap(),
+                    .to_str()
+                    .ok_or_else(|| Install("Path malformed".to_string()))?
+                    .to_string(),
             },
         ];
 
@@ -115,7 +121,58 @@ impl Updater {
         Ok(())
     }
 
-    pub async fn install_version(&mut self) -> Result<(), UpdateErrors> {
+    pub(crate) async fn install_assets(
+        &mut self,
+        version: &UniversalVersionJson,
+    ) -> Result<(), UpdateErrors> {
+        let index = version
+            .clone()
+            .asset_index
+            .ok_or_else(|| Install("Asset index not found".to_string()))?;
+
+        let assets_manifest = Self::client()
+            .get(index.url.clone())
+            .send()
+            .await
+            .map_err(|e| Download(e.to_string()))?
+            .json::<AssetManifest>()
+            .await
+            .map_err(|e1| Download(e1.to_string()))?;
+
+        let mut files = Vec::new();
+        for (field, entry) in assets_manifest.objects {
+            let two_char_hash = &entry.hash[0..2];
+            let file_url = format!(
+                "https://resources.download.minecraft.net/{}/{}",
+                two_char_hash, entry.hash
+            );
+            let file_path = Path::new(&self.game_files_location)
+                .join(format!("assets/objects/{}/{}", two_char_hash, entry.hash));
+            files.push(UpdateFile {
+                url: file_url,
+                name: field,
+                hash: entry.hash,
+                size: entry.size,
+                local_path: file_path
+                    .to_str()
+                    .ok_or_else(|| Install("Path malformed".to_string()))?
+                    .to_string(),
+            })
+        }
+
+        let mut downloader = Downloader::new(10).with_files(files.clone());
+        downloader.download_all_files().await?;
+
+        if !downloader.failed_files().is_empty() {
+            return Err(Download("Failed to download some files".to_string()));
+        }
+
+        self.all_downloaded_files.extend(files);
+
+        Ok(())
+    }
+
+    pub(crate) async fn install_version(&mut self) -> Result<(), UpdateErrors> {
         println!("Installing version {}", self.version);
 
         let manifest = Self::get_version_manifest().await?;
@@ -136,9 +193,10 @@ impl Updater {
 
         println!("Starting install");
         self.install_special_files(&version).await?;
+        self.install_assets(&version).await?;
         println!("Install done, verifying");
 
-        let failed = verify_files(self.all_downloaded_files.clone(), 5).await;
+        let failed = verify_files(self.all_downloaded_files.clone(), 10).await;
 
         println!(
             "Verifying complete with {} errors",
@@ -153,7 +211,7 @@ impl Updater {
     }
 }
 
-pub async fn verify_files(
+pub(crate) async fn verify_files(
     files: Vec<UpdateFile>,
     max_concurrent_verify: usize,
 ) -> Result<(), Vec<UpdateFile>> {
@@ -171,19 +229,24 @@ pub async fn verify_files(
 
     let results = join_all(tasks).await;
     let mut failed = Vec::new();
-    for (file, result) in files.iter().zip(results) {
+
+    for (file, result) in files.into_iter().zip(results) {
         match result {
-            Ok(_) => {}
-            Err(_) => {
-                failed.push(file.clone());
+            Ok(Ok(true)) => {}
+            _ => {
+                failed.push(file);
             }
         }
     }
 
-    failed.is_empty().ok_or_else(|| failed)
+    if failed.is_empty() {
+        Ok(())
+    } else {
+        Err(failed)
+    }
 }
 
-pub async fn verify_file(file: UpdateFile) -> Result<bool, UpdateErrors> {
+pub(crate) async fn verify_file(file: UpdateFile) -> Result<bool, UpdateErrors> {
     let mut hasher = Sha1::new();
     let mut local_file = File::open(&file.local_path)
         .await
@@ -203,13 +266,16 @@ pub async fn verify_file(file: UpdateFile) -> Result<bool, UpdateErrors> {
         hasher.update(&buffer[..bytes_read]);
     }
 
-    let hash = hasher.finalize();
+    let hash_hex = hex::encode(hasher.finalize());
 
-    let hash_hex = hex::encode(hash);
-    println!(
-        "Computed hash for file {}: {}, Expected hash: {}",
-        file.local_path, hash_hex, file.hash
-    );
+    let is_valid = hash_hex.eq_ignore_ascii_case(&file.hash);
 
-    Ok(hash_hex == file.hash)
+    if !is_valid {
+        eprintln!(
+            "[FAILED] file {}: local={}, expected={}",
+            file.local_path, hash_hex, file.hash
+        );
+    }
+
+    Ok(is_valid)
 }

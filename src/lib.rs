@@ -4,8 +4,11 @@ mod update;
 #[cfg(test)]
 mod test {
     use crate::auth::Authenticator;
+    use crate::update::downloader::Downloader;
+    use crate::update::structs::UpdateFile;
     use crate::update::Updater;
-    use std::env;
+    use std::path::Path;
+    use std::{env, fs};
     use tokio::runtime::Runtime;
 
     #[test]
@@ -117,14 +120,46 @@ mod test {
 
     #[test]
     fn test_updater() {
-        let mut updater = Updater::new(
-            "26.2".to_string(),
-            "/home/knightmar/.knightlauncher".to_string(),
-        );
+        let path = "/home/knightmar/.knightlauncher".to_string();
+        let mut updater = Updater::new("26.2".to_string(), path.clone());
+
+        fs::remove_dir_all(path);
 
         println!(
             "{:?}",
             Runtime::new().unwrap().block_on(updater.install_version())
         );
+    }
+
+    #[tokio::test]
+    async fn test_multiple_versions_parsing() {
+        let versions = [
+            "26.3-snapshot-5",
+            "25w14craftmine",
+            "1.16",
+            "20w16a",
+            "1.9.3-pre3",
+            "1.RV-Pre1",
+            "1.8.2",
+            "a1.0.17_04",
+        ];
+
+        let manifest = Updater::get_version_manifest()
+            .await
+            .expect("Cannot get manifest");
+
+        for expected_id in versions {
+            let version_info = manifest
+                .versions
+                .iter()
+                .find(|x| x.id == expected_id)
+                .unwrap_or_else(|| panic!("Version {} not found in manifest", expected_id));
+
+            let rversion = Updater::get_version(version_info)
+                .await
+                .unwrap_or_else(|e| panic!("Failed to get version {} : {:?}", expected_id, e));
+
+            assert_eq!(rversion.id, expected_id, "Ids not matched");
+        }
     }
 }

@@ -374,3 +374,15 @@ impl UniversalVersionJson {
             .map(|a| a.url.as_str())
     }
 }
+
+
+#[derive(Debug, Deserialize)]
+pub struct AssetManifest {
+    pub objects: HashMap<String, AssetEntry>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct AssetEntry {
+    pub hash: String,
+    pub size: u64,
+}

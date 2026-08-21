@@ -1,4 +1,4 @@
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct UpdateFile {
     pub url: String,
     pub name: String,
