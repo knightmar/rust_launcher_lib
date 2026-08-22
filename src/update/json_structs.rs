@@ -381,7 +381,7 @@ pub struct AssetManifest {
     pub objects: HashMap<String, AssetEntry>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct AssetEntry {
     pub hash: String,
     pub size: u64,

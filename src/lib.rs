@@ -120,6 +120,8 @@ mod test {
 
     #[test]
     fn test_updater() {
+        dotenv::dotenv().ok();
+
         let path = "/home/knightmar/.knightlauncher".to_string();
         let mut updater = Updater::new("26.2".to_string(), path.clone());
 

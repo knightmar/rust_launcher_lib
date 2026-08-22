@@ -3,6 +3,7 @@ use crate::update::structs::UpdateFile;
 use crate::update::verify_file;
 use futures_util::future::join_all;
 use futures_util::StreamExt;
+use std::env;
 use std::path::Path;
 use std::sync::Arc;
 use std::time::Duration;
@@ -40,6 +41,10 @@ impl Downloader {
         file: UpdateFile,
         client: reqwest::Client,
     ) -> Result<(), UpdateErrors> {
+        if env::var("MOCK_ENV").is_ok_and(|t| t.eq("true")) {
+            return Ok(());
+        }
+        
         let file1 = file.clone();
         let path = Path::new(file1.local_path.as_str());
 
