@@ -1,53 +1,49 @@
-# Warning ⚠️ 
-Currently, my studies are taking me all my time, I don't have any moment to work on this lib, I won't let down the project, but it's currently at a down state, stay tuned for any updates here
-Sorry for any inconveniences
-
 # Rust Launcher Lib
 
 This library was created to allow the creation of launchers for the minecraft video game, using the rust programming language.
 
 ## Current state
 The lib is in early development, some functionalities are already available but not much.
-- [x] Vanilla install (versions > 1.13, other versions will be implemented soon)
+- [x] Vanilla install (all versions)
 - [x] Game launch (only on vanilla)
-- [x] Authentication (Microsoft and offline)
+- [x] Authentication (Microsoft only, no cracked)
 - [ ] Modloader installation (Forge, Fabric, Quilt, Neoforge)
 - [ ] Mod installation (CurseForge, Modrinth, personnal server)
 - [ ] Custom files
+- [ ] Custom launching argument (JVM + mc)
 
 ## Code organisation
 
 The code of this project is organized in a simple way: 
 - src/auth: code for authenticating game accounts
-- src/launch: code to launch the game once the files have been downloaded
 - src/update: code for updating game files
+- src/launch: code to launch the game once the files have been downloaded
 - lib.rs: main library file
 
 ## How to use
-First install this librairy into your project
+First install this library into your project
 ### Install
 Then, to launch the game we need an Updater object (I'll use the 1.21 version of the game) : 
 ```rust
-let mut updater = Updater::new("1.21");
+let mut updater = Updater::new("26.2".to_string(), "/home/user/.your_dir".to_string());
 ```
-We need to specify the location of our launcher (In the AppData folder) : 
-```rust
-updater.set_relative_local_dir_path(".rustLauncherLib");
-```
-And then install the game files : 
+And then install the game files, install_version() is async so you need to block on (may change in future): 
 ```rust 
-updater.install_files();
+tokio::runtime::Runtime::new()
+.unwrap()
+.block_on(updater.install_version());
 ``` 
+
 ### Launch
 For the moment, we have our files on the disk, let's launch the game : 
 ```rust 
-let launcher = launch::GameLauncher::new(
-    "1.21".to_string(),
-    ".rustLauncherLib".to_string(),
-    vec![], // the game arguments if you need to pass some
-    vec![], // the jvm arguments
+let launcher = Launcher::new(
+updater.game_files_location.into(),
+"your_player_uuid".to_string(),
+"your_access_token".to_string(),
+"username".to_string(),
+"26.2".to_string(),
 );
-launcher.launch("access_token", "username").unwrap();
 ```
 And here it is ! The game is launched.
 
@@ -55,41 +51,41 @@ For the people that don't want to understand what they are doing, here is the fu
 
 ```rust
 fn main() {
-    let mut updater = Updater::new("1.21");
-    updater.set_relative_local_dir_path(".rustLauncherLib");
-    updater.install_files();
+    let mut updater = Updater::new("1.RV-Pre1".to_string(), "/home/knightmar/.tempmc".to_string());
+    let result = tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(updater.install_version());
 
-    let launcher = launch::GameLauncher::new(
-        "1.21".to_string(),
-        ".rustLauncherLib".to_string(),
-        vec![],
-        vec![],
+    println!("{:#?}", result.err().ok_or("No error"));
+
+    let launcher = Launcher::new(
+        updater.game_files_location.into(),
+        "418004cf-7db4-4815-9b27-e1d924134821".to_string(),
+        "0".to_string(),
+        "knightmar".to_string(),
+        "1.RV-Pre1".to_string(),
     );
-    launcher.launch("access_token", "username").unwrap();
+
+    println!("{:?}", launcher.launch());
 }
 ```
 
 ### Authentification
-// todo
+No doc for now, but go check the code, it's not that hard
 
-## Librairies used
-Here are the main librairies that i'm using on this project :
-- [mc_auth](https://docs.rs/mc_auth/0.1.0/mc_auth/)
+## Libraries used
+Here are the main libraries that I'm using on this project :
 - [serde](https://docs.rs/serde/1.0.203/serde/)
 - [reqwest](https://docs.rs/reqwest/latest/reqwest/)
 - [futures](https://docs.rs/futures/latest/futures/)
 - [tokio](https://docs.rs/tokio/latest/tokio/)
 
-(The other libs I use can be found in cargo.toml file)
-
-
-# Thanks
-This library is inspired by [Flow Updater](https://github.com/FlowArg/FlowUpdater), a great library used to make launchers in Java. Go check the repo !
+(The other libs I use can be found in Cargo.toml file)
 
 # License
 MIT License
 
-Copyright (c) [year] [fullname]
+Copyright (c) 2026 knightmar
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
