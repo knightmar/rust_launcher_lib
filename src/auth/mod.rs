@@ -1,5 +1,8 @@
 use crate::auth::errors::AuthErrors;
-use crate::auth::structs::{MinecraftAuthResponse, MinecraftProfile, MinecraftStoreResponse, OAuthTokenResponse, XboxLiveResponse, XstsError};
+use crate::auth::structs::{
+    MinecraftAuthResponse, MinecraftProfile, MinecraftStoreResponse, OAuthTokenResponse,
+    XboxLiveResponse, XstsError,
+};
 use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use base64::Engine;
 use reqwest::{Body, Url};
@@ -29,9 +32,7 @@ HsMs+NxEnN4E9a8PDB23b4yjKOQ9VHDxBxuaZJU60GBCIOF9tslb7OAkheSJx5Xy
 EYblHbogFGPRFU++NrSQRX0CAwEAAQ==
 -----END PUBLIC KEY-----"#;
 
-pub struct Authenticator {
-
-}
+pub struct Authenticator {}
 
 impl Authenticator {
     fn client() -> reqwest::Client {
@@ -41,12 +42,10 @@ impl Authenticator {
             .unwrap()
     }
 
-
     pub async fn exchange_code_for_token(
         client_id: &str,
         auth_code: &str,
     ) -> Result<OAuthTokenResponse, Box<dyn std::error::Error>> {
-
         let params = [
             ("client_id", client_id),
             ("scope", "XboxLive.signin offline_access"),
@@ -74,9 +73,9 @@ impl Authenticator {
 
         let state = rand::random::<u64>().to_string();
 
-
         let mut auth_url =
-            Url::parse("https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize").map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
+            Url::parse("https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize")
+                .map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
         auth_url
             .query_pairs_mut()
             .append_pair("client_id", client_id)
@@ -92,9 +91,20 @@ impl Authenticator {
                 Err(e) => {
                     attempts += 1;
                     if attempts >= MAX_RETRIES {
-                        return Err(AuthErrors::OAuth2(format!("Port {} is busy after {} attempts: {}", PORT, MAX_RETRIES, e).into()));
+                        return Err(AuthErrors::OAuth2(
+                            format!(
+                                "Port {} is busy after {} attempts: {}",
+                                PORT, MAX_RETRIES, e
+                            )
+                            .into(),
+                        ));
                     }
-                    println!("Port {} is busy, retrying in 1s... (attempt {}/{})", PORT, attempts + 1, MAX_RETRIES);
+                    println!(
+                        "Port {} is busy, retrying in 1s... (attempt {}/{})",
+                        PORT,
+                        attempts + 1,
+                        MAX_RETRIES
+                    );
                     std::thread::sleep(Duration::from_secs(1));
                 }
             }
@@ -105,7 +115,8 @@ impl Authenticator {
 
         for request in server.incoming_requests() {
             let url_path = request.url();
-            let parsed_url = Url::parse(&format!("http://localhost:8080{}", url_path)).map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
+            let parsed_url = Url::parse(&format!("http://localhost:8080{}", url_path))
+                .map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
 
             if let Some(state_param) = parsed_url.query_pairs().find(|(k, _)| k == "state") {
                 if state_param.1 != state {
@@ -122,17 +133,20 @@ impl Authenticator {
                 if let Some(auth_code) = code {
                     let response =
                         Response::from_string("Authentication successful! You can close this tab.");
-                    request.respond(response).map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
+                    request
+                        .respond(response)
+                        .map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
                     return Ok(auth_code);
                 }
             }
         }
 
-        Err(AuthErrors::OAuth2("Failed to capture authorization code".into()))
+        Err(AuthErrors::OAuth2(
+            "Failed to capture authorization code".into(),
+        ))
     }
 
     pub async fn auth_xbox_live(oauth2_access_token: &str) -> Result<XboxLiveResponse, AuthErrors> {
-
         let body = json!({
             "Properties": {
                 "AuthMethod": "RPS",
@@ -158,7 +172,6 @@ impl Authenticator {
     }
 
     pub async fn auth_xsts(xbl_token: &str) -> Result<XboxLiveResponse, AuthErrors> {
-
         let body = json!({
             "Properties": {
                 "SandboxId": "RETAIL",
@@ -169,7 +182,7 @@ impl Authenticator {
             "RelyingParty": "rp://api.minecraftservices.com/",
             "TokenType": "JWT"
         })
-            .to_string();
+        .to_string();
 
         Self::client()
             .post("https://xsts.auth.xboxlive.com/xsts/authorize")
@@ -190,10 +203,14 @@ impl Authenticator {
             .map_err(|e| AuthErrors::Xsts(e.to_string()))
     }
 
-    pub async fn auth_minecraft(userhash: &str, xsts_token: &str) -> Result<MinecraftAuthResponse, AuthErrors> {
+    pub async fn auth_minecraft(
+        userhash: &str,
+        xsts_token: &str,
+    ) -> Result<MinecraftAuthResponse, AuthErrors> {
         let body = json!({
             "identityToken": format!("XBL3.0 x={userhash};{xsts_token}")
-        }).to_string();
+        })
+        .to_string();
 
         Self::client()
             .post("https://api.minecraftservices.com/authentication/login_with_xbox")
@@ -202,9 +219,7 @@ impl Authenticator {
             .body(Body::wrap(body))
             .send()
             .await
-            .map_err(|e| {
-                AuthErrors::Minecraft(e.to_string())
-            })?
+            .map_err(|e| AuthErrors::Minecraft(e.to_string()))?
             .json::<MinecraftAuthResponse>()
             .await
             .map_err(|e| AuthErrors::Minecraft(e.to_string()))
@@ -222,16 +237,21 @@ impl Authenticator {
 
         let signed_data = format!("{}.{}", header_b64, payload_b64);
 
-        let public_key = RsaPublicKey::from_public_key_pem(MOJANG_PUBLIC_KEY_PEM).map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
+        let public_key = RsaPublicKey::from_public_key_pem(MOJANG_PUBLIC_KEY_PEM)
+            .map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
 
-        let signature_bytes = BASE64_URL_SAFE_NO_PAD.decode(signature_b64).map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
+        let signature_bytes = BASE64_URL_SAFE_NO_PAD
+            .decode(signature_b64)
+            .map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
 
         let mut hasher = Sha256::new();
         hasher.update(signed_data.as_bytes());
         let hashed_data = hasher.finalize();
 
         let scheme = Pkcs1v15Sign::new::<Sha256>();
-        let is_valid = public_key.verify(scheme, &hashed_data, &signature_bytes).is_ok();
+        let is_valid = public_key
+            .verify(scheme, &hashed_data, &signature_bytes)
+            .is_ok();
 
         Ok(is_valid)
     }
@@ -242,22 +262,25 @@ impl Authenticator {
             .header("Authorization", format!("Bearer {minecraft_access_token}"))
             .send()
             .await
-            .map_err(|e| { AuthErrors::Minecraft(e.to_string()) })?
+            .map_err(|e| AuthErrors::Minecraft(e.to_string()))?
             .json::<MinecraftStoreResponse>()
             .await
             .map_err(|e| AuthErrors::Minecraft(e.to_string()))?;
 
-
         let is_valid = Self::verify_jwt_signature(&response.signature)?;
 
         if !is_valid {
-            return Err(AuthErrors::Minecraft("Invalid signature when checking ownership".to_string()));
+            return Err(AuthErrors::Minecraft(
+                "Invalid signature when checking ownership".to_string(),
+            ));
         }
 
         Ok(!response.items.is_empty())
     }
 
-    pub async fn get_minecraft_profile(minecraft_access_token: &str) -> Result<MinecraftProfile, AuthErrors> {
+    pub async fn get_minecraft_profile(
+        minecraft_access_token: &str,
+    ) -> Result<MinecraftProfile, AuthErrors> {
         let response = Self::client()
             .get("https://api.minecraftservices.com/minecraft/profile")
             .header("Authorization", format!("Bearer {minecraft_access_token}"))
@@ -278,10 +301,17 @@ impl Authenticator {
 
     pub async fn auth(client_id: &str) -> Result<MinecraftProfile, AuthErrors> {
         let oauth2_code = Self::auth_oauth2(client_id)?;
-        let oauth_token_response = Self::exchange_code_for_token(client_id, &oauth2_code).await.map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
-        let xbox_live_response = Self::auth_xbox_live(oauth_token_response.access_token.as_str()).await?;
+        let oauth_token_response = Self::exchange_code_for_token(client_id, &oauth2_code)
+            .await
+            .map_err(|e| AuthErrors::OAuth2(e.to_string()))?;
+        let xbox_live_response =
+            Self::auth_xbox_live(oauth_token_response.access_token.as_str()).await?;
         let xsts_response = Self::auth_xsts(xbox_live_response.token.as_str()).await?;
-        let minecraft_response = Self::auth_minecraft(xsts_response.display_claims.xui[0].uhs.as_str(), xsts_response.token.as_str()).await?;
+        let minecraft_response = Self::auth_minecraft(
+            xsts_response.display_claims.xui[0].uhs.as_str(),
+            xsts_response.token.as_str(),
+        )
+        .await?;
         if !Self::check_game_ownership(minecraft_response.access_token.as_str()).await? {
             return Err(AuthErrors::Minecraft("Game not owned".to_string()));
         }

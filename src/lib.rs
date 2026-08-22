@@ -1,9 +1,11 @@
 pub mod auth;
-mod update;
+pub mod launch;
+pub mod update;
 
 #[cfg(test)]
 mod test {
     use crate::auth::Authenticator;
+    use crate::launch::Launcher;
     use crate::update::downloader::Downloader;
     use crate::update::structs::UpdateFile;
     use crate::update::Updater;
@@ -163,5 +165,22 @@ mod test {
 
             assert_eq!(rversion.id, expected_id, "Ids not matched");
         }
+    }
+
+    #[test]
+    fn launch_game() {
+        let launcher = Launcher::new(
+            "/home/knightmar/.knightlauncher".into(),
+            "/home/knightmar/.knightlauncher/assets".into(),
+            "32".to_string(),
+            "00000000-0000-0000-0000-000000000000".to_string(),
+            "0".to_string(),
+            "knightmar".to_string(),
+            "26.2".to_string(),
+        );
+
+        let result = launcher.launch();
+        println!("{:#?}", result.clone().err().ok_or("no error"));
+        assert!(result.is_ok());
     }
 }
