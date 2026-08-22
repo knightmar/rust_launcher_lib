@@ -1,10 +1,7 @@
 use crate::auth::errors::AuthErrors;
-use crate::auth::structs::{
-    MinecraftAuthResponse, MinecraftProfile, MinecraftStoreResponse, OAuthTokenResponse,
-    XboxLiveResponse, XstsError,
-};
-use base64::prelude::BASE64_URL_SAFE_NO_PAD;
+
 use base64::Engine;
+use base64::prelude::BASE64_URL_SAFE_NO_PAD;
 use reqwest::{Body, Url};
 use rsa::pkcs8::DecodePublicKey;
 use rsa::signature::digest::Digest;
@@ -13,9 +10,12 @@ use serde_json::json;
 use sha2::Sha256;
 use std::time::Duration;
 use tiny_http::{Response, Server};
+use crate::auth::profile::MinecraftProfile;
+use crate::auth::structs::*;
 
-mod errors;
+pub mod errors;
 mod structs;
+pub mod profile;
 
 const MOJANG_PUBLIC_KEY_PEM: &str = r#"-----BEGIN PUBLIC KEY-----
 MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAtz7jy4jRH3psj5AbVS6W
@@ -42,7 +42,7 @@ impl Authenticator {
             .unwrap()
     }
 
-    pub async fn exchange_code_for_token(
+    pub(crate) async fn exchange_code_for_token(
         client_id: &str,
         auth_code: &str,
     ) -> Result<OAuthTokenResponse, Box<dyn std::error::Error>> {
@@ -64,7 +64,7 @@ impl Authenticator {
 
         Ok(token_res)
     }
-    pub fn auth_oauth2(client_id: &str) -> Result<String, AuthErrors> {
+    pub(crate) fn auth_oauth2(client_id: &str) -> Result<String, AuthErrors> {
         const PORT: u16 = 8080;
         const MAX_RETRIES: u8 = 5;
 
@@ -146,7 +146,9 @@ impl Authenticator {
         ))
     }
 
-    pub async fn auth_xbox_live(oauth2_access_token: &str) -> Result<XboxLiveResponse, AuthErrors> {
+    pub(crate) async fn auth_xbox_live(
+        oauth2_access_token: &str,
+    ) -> Result<XboxLiveResponse, AuthErrors> {
         let body = json!({
             "Properties": {
                 "AuthMethod": "RPS",
@@ -171,7 +173,7 @@ impl Authenticator {
             .map_err(|e| AuthErrors::XboxLive(e.to_string()))
     }
 
-    pub async fn auth_xsts(xbl_token: &str) -> Result<XboxLiveResponse, AuthErrors> {
+    pub(crate) async fn auth_xsts(xbl_token: &str) -> Result<XboxLiveResponse, AuthErrors> {
         let body = json!({
             "Properties": {
                 "SandboxId": "RETAIL",
@@ -203,7 +205,7 @@ impl Authenticator {
             .map_err(|e| AuthErrors::Xsts(e.to_string()))
     }
 
-    pub async fn auth_minecraft(
+    pub(crate) async fn auth_minecraft(
         userhash: &str,
         xsts_token: &str,
     ) -> Result<MinecraftAuthResponse, AuthErrors> {
@@ -225,7 +227,7 @@ impl Authenticator {
             .map_err(|e| AuthErrors::Minecraft(e.to_string()))
     }
 
-    pub fn verify_jwt_signature(jwt: &str) -> Result<bool, AuthErrors> {
+    pub(crate) fn verify_jwt_signature(jwt: &str) -> Result<bool, AuthErrors> {
         let parts: Vec<&str> = jwt.split('.').collect();
         if parts.len() != 3 {
             return Ok(false);
@@ -256,7 +258,9 @@ impl Authenticator {
         Ok(is_valid)
     }
 
-    pub async fn check_game_ownership(minecraft_access_token: &str) -> Result<bool, AuthErrors> {
+    pub(crate) async fn check_game_ownership(
+        minecraft_access_token: &str,
+    ) -> Result<bool, AuthErrors> {
         let response = Self::client()
             .get("https://api.minecraftservices.com/entitlements/mcstore")
             .header("Authorization", format!("Bearer {minecraft_access_token}"))
@@ -278,7 +282,7 @@ impl Authenticator {
         Ok(!response.items.is_empty())
     }
 
-    pub async fn get_minecraft_profile(
+    pub(crate) async fn get_minecraft_profile(
         minecraft_access_token: &str,
     ) -> Result<MinecraftProfile, AuthErrors> {
         let response = Self::client()
@@ -299,6 +303,26 @@ impl Authenticator {
         Ok(profile)
     }
 
+    ///
+    ///
+    /// # Arguments
+    ///
+    /// * `client_id`: The Microsoft Azure App client_id, specific to your launcher (get it from env and do not let it in sources :p)
+    ///
+    /// returns: A MinecraftProfile representing the player, or an AuthErrors that contains the string of error
+    ///
+    /// # Examples
+    ///
+    /// ```
+    ///dotenv::dotenv().ok();
+    ///
+    ///let client_id = env::var("CLIENT_ID").unwrap();
+    ///
+    ///let profile = Runtime::new()
+    ///    .unwrap()
+    ///    .block_on(Authenticator::auth(client_id.as_str()));
+    ///println!("Welcome {}", profile.unwrap().name);
+    /// ```
     pub async fn auth(client_id: &str) -> Result<MinecraftProfile, AuthErrors> {
         let oauth2_code = Self::auth_oauth2(client_id)?;
         let oauth_token_response = Self::exchange_code_for_token(client_id, &oauth2_code)

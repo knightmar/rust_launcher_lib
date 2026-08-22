@@ -1,14 +1,14 @@
 use serde_derive::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::auth::profile::Item;
+
 #[derive(Deserialize, Debug)]
 pub struct OAuthTokenResponse {
     pub access_token: String,
     pub refresh_token: Option<String>,
     pub expires_in: u64,
 }
-
-
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -61,48 +61,12 @@ pub struct MinecraftAuthResponse {
     pub expires_in: i64,
 }
 
-
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct MinecraftStoreResponse {
     pub items: Vec<Item>,
     pub signature: String,
     pub key_id: String,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Item {
-    pub name: String,
-    pub signature: String,
-}
-
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct MinecraftProfile {
-    pub id: String,
-    pub name: String,
-    pub skins: Vec<Skin>,
-    pub capes: Vec<Cape>,
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Skin {
-    pub id: String,
-    pub state: String,
-    pub url: String,
-    pub variant: String,
-    pub alias: Option<String>,
-}
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Cape {
-    pub id: String,
-    pub state: String,
-    pub url: String,
-    pub alias: Option<String>,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
