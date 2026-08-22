@@ -171,8 +171,6 @@ mod test {
     fn launch_game() {
         let launcher = Launcher::new(
             "/home/knightmar/.knightlauncher".into(),
-            "/home/knightmar/.knightlauncher/assets".into(),
-            "32".to_string(),
             "00000000-0000-0000-0000-000000000000".to_string(),
             "0".to_string(),
             "knightmar".to_string(),

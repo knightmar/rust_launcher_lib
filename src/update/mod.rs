@@ -511,7 +511,7 @@ impl Updater {
             || file_name.ends_with(".dll")
     }
 
-    pub(crate) async fn install_version(&mut self) -> Result<(), UpdateErrors> {
+    pub async fn install_version(&mut self) -> Result<(), UpdateErrors> {
         println!("Installing version {}", self.version);
 
         let manifest = Self::get_version_manifest().await?;

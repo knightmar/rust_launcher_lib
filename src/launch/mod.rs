@@ -7,8 +7,6 @@ use walkdir::WalkDir;
 
 pub struct Launcher {
     game_dir: PathBuf,
-    assets_dir: PathBuf,
-    asset_index: String,
     uuid: String,
     access_token: String,
     username: String,
@@ -52,28 +50,74 @@ impl Launcher {
         Ok(classpath_entries.join(separator))
     }
 
+    pub fn get_asset_index(&self) -> Result<String, String> {
+        let assets_index_dir = self.game_dir.join("assets/indexes");
+
+        if !assets_index_dir.exists() {
+            return Err(format!(
+                "Assets index directory not found: {:?}",
+                assets_index_dir
+            ));
+        }
+
+        let index_files: Vec<_> = walkdir::WalkDir::new(&assets_index_dir)
+            .into_iter()
+            .filter_map(|e| e.ok())
+            .filter(|e| e.path().is_file())
+            .filter(|e| {
+                e.path()
+                    .extension()
+                    .and_then(|ext| ext.to_str())
+                    .map(|ext| ext == "json")
+                    .unwrap_or(false)
+            }) // Only .json files
+            .collect();
+
+        if index_files.is_empty() {
+            return Err("No asset index files found".to_string());
+        }
+
+        let first_file = &index_files[0];
+        let file_name = first_file.file_name();
+
+        let file_name_str = file_name
+            .to_str()
+            .ok_or_else(|| format!("Invalid file name: {:?}", file_name))?;
+
+        let index_name = file_name_str
+            .strip_suffix(".json")
+            .unwrap_or(file_name_str)
+            .to_string();
+
+        Ok(index_name)
+    }
+
     pub fn launch(self) -> Result<i32, String> {
         let classpath = self.get_classpath()?;
+        let natives_dir = self.game_dir.join("natives");
 
         let mut cmd = std::process::Command::new("java");
-        cmd.arg("-Djava.library.path=natives")
-            .arg("-cp")
-            .arg(classpath)
-            .arg("net.minecraft.client.main.Main")
-            .arg("--username")
-            .arg(self.username.clone())
-            .arg("--gameDir")
-            .arg(self.game_dir.clone())
-            .arg("--assetsDir")
-            .arg(self.assets_dir.clone())
-            .arg("--assetIndex")
-            .arg(self.asset_index.clone())
-            .arg("--uuid")
-            .arg(self.uuid.clone())
-            .arg("--accessToken")
-            .arg(self.access_token.clone())
-            .arg("--version")
-            .arg(self.version.clone());
+        cmd.arg(format!(
+            "-Djava.library.path={}",
+            natives_dir.to_str().unwrap()
+        ))
+        .arg("-cp")
+        .arg(classpath)
+        .arg("net.minecraft.client.main.Main")
+        .arg("--username")
+        .arg(self.username.clone())
+        .arg("--gameDir")
+        .arg(self.game_dir.clone())
+        .arg("--assetsDir")
+        .arg(self.game_dir.join("assets"))
+        .arg("--assetIndex")
+        .arg(self.get_asset_index()?)
+        .arg("--uuid")
+        .arg(self.uuid.clone())
+        .arg("--accessToken")
+        .arg(self.access_token.clone())
+        .arg("--version")
+        .arg(self.version.clone());
 
         #[cfg(target_os = "linux")]
         {
@@ -97,8 +141,6 @@ impl Launcher {
 
     pub fn new(
         game_dir: PathBuf,
-        assets_dir: PathBuf,
-        asset_index: String,
         uuid: String,
         access_token: String,
         username: String,
@@ -106,8 +148,6 @@ impl Launcher {
     ) -> Self {
         Self {
             game_dir,
-            assets_dir,
-            asset_index,
             uuid,
             access_token,
             username,
