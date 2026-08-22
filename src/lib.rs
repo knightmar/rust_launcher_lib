@@ -6,9 +6,9 @@ pub mod update;
 mod test {
     use crate::auth::Authenticator;
     use crate::launch::Launcher;
+    use crate::update::Updater;
     use crate::update::downloader::Downloader;
     use crate::update::structs::UpdateFile;
-    use crate::update::Updater;
     use std::path::Path;
     use std::{env, fs};
     use tokio::runtime::Runtime;
@@ -171,8 +171,8 @@ mod test {
     fn launch_game() {
         let launcher = Launcher::new(
             "/home/knightmar/.knightlauncher".into(),
-            "00000000-0000-0000-0000-000000000000".to_string(),
-            "0".to_string(),
+            None,
+            None,
             "knightmar".to_string(),
             "26.2".to_string(),
         );
