@@ -19,11 +19,11 @@ impl Launcher {
     fn is_offline(&self) -> bool {
         self.access_token == "0" && self.uuid == "00000000-0000-0000-0000-000000000000"
     }
-    pub fn with_game_arguments(mut self, arguments: String) -> Self {
+    pub fn with_game_arguments(&mut self, arguments: String) -> &Self {
         self.game_arguments = arguments;
         self
     }
-    pub fn with_jvm_arguments(mut self, arguments: String) -> Self {
+    pub fn with_jvm_arguments(&mut self, arguments: String) -> &Self {
         self.jvm_arguments = arguments;
         self
     }
@@ -112,11 +112,15 @@ impl Launcher {
 
         let mut cmd = std::process::Command::new("java");
 
-        if self.is_offline() {
-            cmd.arg("-Dminecraft.api.auth.host=https://nope.invalid")
-                .arg("-Dminecraft.api.account.host=https://nope.invalid")
-                .arg("-Dminecraft.api.session.host=https://nope.invalid")
-                .arg("-Dminecraft.api.services.host=https://nope.invalid");
+        // if self.is_offline() {
+        //     cmd.arg("-Dminecraft.api.auth.host=https://nope.invalid")
+        //         .arg("-Dminecraft.api.account.host=https://nope.invalid")
+        //         .arg("-Dminecraft.api.session.host=https://nope.invalid")
+        //         .arg("-Dminecraft.api.services.host=https://nope.invalid");
+        // }
+
+        if !self.jvm_arguments.is_empty() {
+            cmd.args(self.jvm_arguments.split(" "));
         }
 
         cmd.arg(format!(
@@ -140,6 +144,10 @@ impl Launcher {
         .arg(self.access_token.clone())
         .arg("--version")
         .arg(self.version.clone());
+
+        if !self.game_arguments.is_empty() {
+            cmd.args(self.game_arguments.split(" "));
+        }
 
         #[cfg(target_os = "linux")]
         {
