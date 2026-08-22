@@ -14,7 +14,7 @@ pub struct Launcher {
 }
 
 impl Launcher {
-    pub fn get_classpath(&self) -> Result<String, String> {
+    pub(crate) fn get_classpath(&self) -> Result<String, String> {
         let mut classpath_entries = Vec::new();
         let separator = if cfg!(windows) { ";" } else { ":" };
 
@@ -50,7 +50,7 @@ impl Launcher {
         Ok(classpath_entries.join(separator))
     }
 
-    pub fn get_asset_index(&self) -> Result<String, String> {
+    pub(crate) fn get_asset_index(&self) -> Result<String, String> {
         let assets_index_dir = self.game_dir.join("assets/indexes");
 
         if !assets_index_dir.exists() {

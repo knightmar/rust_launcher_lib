@@ -5,8 +5,8 @@ use crate::update::json_structs::{
     AssetIndex, AssetManifest, Library, Rule, UniversalVersionJson, VersionEntry, VersionManifest,
 };
 use crate::update::structs::UpdateFile;
-use futures_util::future::join_all;
 use futures_util::TryStreamExt;
+use futures_util::future::join_all;
 use reqwest::Response;
 use serde_json::to_string;
 use sha1::{Digest, Sha1};
@@ -28,8 +28,8 @@ mod json_structs;
 pub(crate) mod structs;
 
 pub struct Updater {
-    pub version: String,
-    pub game_files_location: String,
+    version: String,
+    game_files_location: String,
     all_downloaded_files: Vec<UpdateFile>,
     all_failed_files: Vec<UpdateFile>,
 }
@@ -398,7 +398,7 @@ impl Updater {
 
         allowed
     }
-    pub async fn extract_natives(&self) -> Result<(), UpdateErrors> {
+    pub(crate) async fn extract_natives(&self) -> Result<(), UpdateErrors> {
         let natives_dir = Path::new(&self.game_files_location).join("natives");
         fs::create_dir_all(&natives_dir)
             .await
@@ -557,6 +557,14 @@ impl Updater {
         );
 
         Ok(())
+    }
+
+    pub fn game_files_location(&self) -> &str {
+        &self.game_files_location
+    }
+
+    pub fn version(&self) -> &str {
+        &self.version
     }
 }
 
