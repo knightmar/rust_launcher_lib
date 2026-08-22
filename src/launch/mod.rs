@@ -11,9 +11,23 @@ pub struct Launcher {
     access_token: String,
     username: String,
     version: String,
+    jvm_arguments: String,
+    game_arguments: String,
 }
 
 impl Launcher {
+    fn is_offline(&self) -> bool {
+        self.access_token == "0" && self.uuid == "00000000-0000-0000-0000-000000000000"
+    }
+    pub fn with_game_arguments(&mut self, arguments: String) -> &Self {
+        self.game_arguments = arguments;
+        self
+    }
+    pub fn with_jvm_arguments(&mut self, arguments: String) -> &Self {
+        self.jvm_arguments = arguments;
+        self
+    }
+
     pub fn get_classpath(&self) -> Result<String, String> {
         let mut classpath_entries = Vec::new();
         let separator = if cfg!(windows) { ";" } else { ":" };
@@ -97,6 +111,18 @@ impl Launcher {
         let natives_dir = self.game_dir.join("natives");
 
         let mut cmd = std::process::Command::new("java");
+
+        // if self.is_offline() {
+        //     cmd.arg("-Dminecraft.api.auth.host=https://nope.invalid")
+        //         .arg("-Dminecraft.api.account.host=https://nope.invalid")
+        //         .arg("-Dminecraft.api.session.host=https://nope.invalid")
+        //         .arg("-Dminecraft.api.services.host=https://nope.invalid");
+        // }
+
+        if !self.jvm_arguments.is_empty() {
+            cmd.args(self.jvm_arguments.split(" "));
+        }
+
         cmd.arg(format!(
             "-Djava.library.path={}",
             natives_dir.to_str().unwrap()
@@ -119,6 +145,10 @@ impl Launcher {
         .arg("--version")
         .arg(self.version.clone());
 
+        if !self.game_arguments.is_empty() {
+            cmd.args(self.game_arguments.split(" "));
+        }
+
         #[cfg(target_os = "linux")]
         {
             let natives_dir = self.game_dir.join("natives");
@@ -140,18 +170,20 @@ impl Launcher {
     }
 
     pub fn new(
-        game_dir: PathBuf,
-        uuid: String,
-        access_token: String,
+        game_dir: String,
+        uuid: Option<String>,
+        access_token: Option<String>,
         username: String,
         version: String,
     ) -> Self {
         Self {
-            game_dir,
-            uuid,
-            access_token,
+            game_dir: game_dir.into(),
+            uuid: uuid.unwrap_or("00000000-0000-0000-0000-000000000000".to_string()),
+            access_token: access_token.unwrap_or("0".into()),
             username,
             version,
+            jvm_arguments: "".to_string(),
+            game_arguments: "".to_string(),
         }
     }
 

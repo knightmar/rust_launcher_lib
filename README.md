@@ -1,18 +1,20 @@
 # Rust Launcher Lib
 
-This library was created to allow the creation of launchers for the minecraft video game, using the rust programming language.
+This library was created to allow the creation of launchers for the Minecraft video game, using the Rust programming language.
 
 ## Current state
-The lib is in early development, some functionalities are already available but not much.
+The lib is in early development so many features aren't already available.
 - [x] Vanilla install (all versions)
 - [x] Game launch (only on vanilla)
-- [x] Authentication (Microsoft only, no cracked)
-- [ ] Modloader installation (Forge, Fabric, Quilt, Neoforge)
-- [ ] Mod installation (CurseForge, Modrinth, personnal server)
+- [x] Authentication (Microsoft and offline)
+- [ ] Mod loader installation (Forge, Fabric, Quilt, Neoforge)
+- [ ] Mod installation (CurseForge, Modrinth, personal server)
 - [ ] Custom files
 - [ ] Custom launching argument (JVM + mc)
+- [ ] Proper documentation
+- [ ] Callbacks for download / installation / verification
 
-## Code organisation
+## Code organization
 
 The code of this project is organized in a simple way: 
 - src/auth: code for authenticating game accounts
@@ -39,8 +41,8 @@ For the moment, we have our files on the disk, let's launch the game :
 ```rust 
 let launcher = Launcher::new(
 updater.game_files_location.into(),
-"your_player_uuid".to_string(),
-"your_access_token".to_string(),
+Some("your_player_uuid".to_string()), // None to play offline
+Some("your_access_token".to_string()), // None to play offline
 "username".to_string(),
 "26.2".to_string(),
 );
@@ -51,7 +53,7 @@ For the people that don't want to understand what they are doing, here is the fu
 
 ```rust
 fn main() {
-    let mut updater = Updater::new("1.RV-Pre1".to_string(), "/home/knightmar/.tempmc".to_string());
+    let mut updater = Updater::new("26.2".to_string(), "/home/user/.your_dir".to_string());
     let result = tokio::runtime::Runtime::new()
         .unwrap()
         .block_on(updater.install_version());
@@ -60,10 +62,10 @@ fn main() {
 
     let launcher = Launcher::new(
         updater.game_files_location.into(),
-        "418004cf-7db4-4815-9b27-e1d924134821".to_string(),
-        "0".to_string(),
-        "knightmar".to_string(),
-        "1.RV-Pre1".to_string(),
+        Some("your_player_uuid".to_string()), // None to play offline
+        Some("your_access_token".to_string()), // None to play offline
+        "username".to_string(),
+        "26.2".to_string(),
     );
 
     println!("{:?}", launcher.launch());
@@ -72,15 +74,6 @@ fn main() {
 
 ### Authentification
 No doc for now, but go check the code, it's not that hard
-
-## Libraries used
-Here are the main libraries that I'm using on this project :
-- [serde](https://docs.rs/serde/1.0.203/serde/)
-- [reqwest](https://docs.rs/reqwest/latest/reqwest/)
-- [futures](https://docs.rs/futures/latest/futures/)
-- [tokio](https://docs.rs/tokio/latest/tokio/)
-
-(The other libs I use can be found in Cargo.toml file)
 
 # License
 MIT License
