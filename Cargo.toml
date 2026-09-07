@@ -27,7 +27,7 @@ futures-util = "0.3.34"
 hex = "0.4.3"
 zip = "9.0.0-pre3"
 walkdir = "2.5.0"
-
+thiserror = "2"
 
 [lib]
 name = "rust_launcher_lib"

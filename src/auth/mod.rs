@@ -45,7 +45,7 @@ impl Authenticator {
     pub async fn exchange_code_for_token(
         client_id: &str,
         auth_code: &str,
-    ) -> Result<OAuthTokenResponse, Box<dyn std::error::Error>> {
+    ) -> Result<OAuthTokenResponse, AuthErrors> {
         let params = [
             ("client_id", client_id),
             ("scope", "XboxLive.signin offline_access"),
@@ -58,9 +58,9 @@ impl Authenticator {
             .post("https://login.microsoftonline.com/consumers/oauth2/v2.0/token")
             .form(&params)
             .send()
-            .await?
+            .await.map_error(|e| {AuthErrors::OAuth2(e.to_string)})?
             .json::<OAuthTokenResponse>()
-            .await?;
+            .await.map_error(|e| {AuthErrors::OAuth2(e.to_string)})?;
 
         Ok(token_res)
     }
